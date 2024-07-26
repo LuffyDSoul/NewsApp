@@ -1,7 +1,6 @@
 ﻿using Shouldly;
 using System.Threading.Tasks;
 using Volo.Abp.Identity;
-using Volo.Abp.Modularity;
 using Xunit;
 
 namespace NewsApp.Samples;
@@ -11,12 +10,11 @@ namespace NewsApp.Samples;
  * (like IIdentityUserAppService here).
  * Only test your own application services.
  */
-public abstract class SampleAppServiceTests<TStartupModule> : NewsAppApplicationTestBase<TStartupModule>
-    where TStartupModule : IAbpModule
+public class SampleAppServiceTests : NewsAppApplicationTestBase
 {
     private readonly IIdentityUserAppService _userAppService;
 
-    protected SampleAppServiceTests()
+    public SampleAppServiceTests()
     {
         _userAppService = GetRequiredService<IIdentityUserAppService>();
     }

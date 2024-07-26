@@ -4,8 +4,8 @@ using NewsApp.Articulos;
 
 namespace NewsApp.ApiNews
 {
-    public interface IApiNewsService
+    public interface IApiNews
     {
-        Task<List<ArticuloDto>> GetNewsAsync(string query);
+        Task<ICollection<ArticuloDto>> GetArticulosAsync(string? Search);
     }
 }

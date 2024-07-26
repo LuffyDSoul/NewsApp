@@ -1,9 +1,10 @@
 ﻿using System;
-using Volo.Abp.Domain.Entities.Auditing;
+using Volo.Abp.Domain.Entities;
+
 
 namespace NewsApp.Articulos;
 
-public class Articulo : AuditedAggregateRoot<Guid>
+public class Articulo : Entity<int>
 {
     public string? Title { get; set; } = string.Empty;
 
