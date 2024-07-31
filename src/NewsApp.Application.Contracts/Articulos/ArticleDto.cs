@@ -3,7 +3,7 @@ using Volo.Abp.Application.Dtos;
 
 namespace NewsApp.Articulos;
 
-public class ArticuloDto : EntityDto<int>
+public class ArticleDto : EntityDto<int>
 {
     public string? Title { get; set; } = string.Empty;
 

@@ -6,9 +6,6 @@ using System.Threading.Tasks;
 
 namespace NewsApp.ApiNews
 {
-    internal class RespuestasArticulos
-    {
-    }
     public class ArticuloDto
     {
         public string? Title { get; set; }

@@ -4,7 +4,7 @@ using Volo.Abp.Domain.Entities;
 
 namespace NewsApp.Articulos;
 
-public class Articulo : Entity<int>
+public class Article : Entity<int>
 {
     public string? Title { get; set; } = string.Empty;
 

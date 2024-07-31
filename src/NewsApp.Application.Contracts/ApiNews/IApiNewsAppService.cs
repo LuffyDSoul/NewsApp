@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace NewsApp.ApiNews
 {
-    public interface IApiNewsService
+    public interface IApiNewsAppService
     {
         Task<ICollection<ArticuloDto>> Search(string? Search);
-        Task<ICollection<ArticuloDto>> SearchFromDate(string? Search, DateTime date);
 
     }
 }
