@@ -10,19 +10,19 @@ namespace NewsApp.ApiNews
 {
     public class ManualMapper
     {
-        public static ICollection<Article> MapArticlesToNews(ICollection<ArticuloDto> articles)
+        public static ICollection<ArticleDto> MapArticlesToNews(ICollection<ArticuloDto> articles)
         {
-            var newsList = new List<Article>();
+            var newsList = new List<ArticleDto>();
 
             foreach (var article in articles)
             {
-                var articuloDto = new Article
+                var articuloDto = new ArticleDto
                 {
                     Author = article.Author,
                     Title = article.Title,
                     Description = article.Description,
                     Content = article.Content,
-                    PublishedAt = article.PublishedAt,
+                    Date=article.PublishedAt,
                     Url = article.Url,
                     UrlToImage = article.UrlToImage
                 };

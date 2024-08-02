@@ -5,11 +5,12 @@ using System.Text;
 using System.Threading.Tasks;
 using NewsApp.Articulos;
 
-namespace NewsApp.ApiNews
+namespace NewsApp.Busqueda
 {
-    public interface IApiNewsAppService
+    public class Search
     {
-        Task<ICollection<ArticleDto>> Search(string? Search);
+        public string Keyword { get; set; }
+        public ICollection<ArticleDto> Articulos { get; set; }
 
     }
 }

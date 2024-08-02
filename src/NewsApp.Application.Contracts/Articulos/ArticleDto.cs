@@ -5,19 +5,19 @@ namespace NewsApp.Articulos;
 
 public class ArticleDto : EntityDto<int>
 {
-    public string? Title { get; set; } = string.Empty;
+    public string? Title { get; set; } ="";
 
-    public string? Author { get; set; } = string.Empty;
+    public string? Author { get; set; } = "";
 
-    public string? Description { get; set; } = string.Empty;
+    public string? Description { get; set; } = "";
 
-    public string? Url { get; set; } = string.Empty;
+    public string? Url { get; set; } = "";
 
-    public string? UrlToImage { get; set; } = string.Empty;
+    public string? UrlToImage { get; set; } = "";
 
-    public DateTime? PublishedAt { get; set; } = DateTime.Now;
+    public DateTime? Date { get; set; } = DateTime.Now;
 
-    public string? Content { get; set; } = string.Empty;
+    public string? Content { get; set; } = "";
 
 
 }

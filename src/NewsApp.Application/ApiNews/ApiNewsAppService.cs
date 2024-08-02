@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Volo.Abp.Domain.Repositories;
+using NewsApp.Articulos;
 
 
 namespace NewsApp.ApiNews
@@ -15,7 +16,7 @@ namespace NewsApp.ApiNews
         {
             _apiNews = apiNewsAppService;
         }
-        public async Task<ICollection<ArticuloDto>> Search(string? Search)
+        public async Task<ICollection<ArticleDto>> Search(string? Search)
         {
             var articulos = await _apiNews.GetArticulosAsync(Search);
 

@@ -1,11 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using NewsApp.Articulos;
 
-namespace NewsApp.ApiNews
+
+namespace NewsApp.ApiNews;
+
+public interface IApiNews
 {
-    public interface IApiNews
-    {
-        Task<ICollection<ArticuloDto>> GetArticulosAsync(string? Search);
-    }
+    Task<ICollection<ArticuloDto>> GetArticulosAsync(string? Search);
 }

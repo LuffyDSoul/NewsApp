@@ -4,17 +4,18 @@ using NewsAPI.Constants;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using NewsApp.Articulos;
 
 namespace NewsApp.ApiNews
 {
     public class ApiNewsService : IApiNews
     {
-        private readonly NewsApiClient _newsApiClient;
+        NewsApiClient _newsApiClient;
 
         public ApiNewsService()
         {
             _newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
-        }
+        }   
 
         public async Task<ICollection<ArticuloDto>> GetArticulosAsync(string? Search)
         {
