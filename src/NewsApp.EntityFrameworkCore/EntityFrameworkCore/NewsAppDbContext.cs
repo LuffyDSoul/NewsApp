@@ -41,7 +41,7 @@ public class NewsAppDbContext :
      */
 
     //Identity
-    public DbSet<Article> Articulos { get; set; }
+    public DbSet<Articulo> Articulos { get; set; }
     public DbSet<IdentityUser> Users { get; set; }
     public DbSet<IdentityRole> Roles { get; set; }
     public DbSet<IdentityClaimType> ClaimTypes { get; set; }
@@ -80,7 +80,7 @@ public class NewsAppDbContext :
         /* Configure your own tables/entities inside here */
 
         // se creo la entidad articulo
-        builder.Entity<Article>(b =>
+        builder.Entity<Articulo>(b =>
         {
          b.ToTable(NewsAppConsts.DbTablePrefix + "Articulos", NewsAppConsts.DbSchema);
             b.ConfigureByConvention(); //auto configure for the base class props

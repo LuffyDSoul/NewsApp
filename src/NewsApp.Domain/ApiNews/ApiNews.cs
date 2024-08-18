@@ -4,22 +4,21 @@ using NewsAPI.Constants;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using NewsApp.Articulos;
 
 namespace NewsApp.ApiNews
 {
     public class ApiNewsService : IApiNews
     {
-        NewsApiClient _newsApiClient;
+        private readonly NewsApiClient _newsApiClient;
 
         public ApiNewsService()
         {
             _newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
-        }   
+        }
 
-        public async Task<ICollection<ArticuloDto>> GetArticulosAsync(string? Search)
+        public async Task<ICollection<NewsArticleDto>> GetArticulosAsync(string? Search)
         {
-            ICollection<ArticuloDto> responseList = new List<ArticuloDto>();
+            ICollection<NewsArticleDto> responseList = new List<NewsArticleDto>();
 
             var articlesResponse = _newsApiClient.GetEverything(new EverythingRequest
             {
@@ -32,7 +31,7 @@ namespace NewsApp.ApiNews
 
             if (articlesResponse.Status == Statuses.Ok)
             {
-                articlesResponse.Articles.ForEach(t => responseList.Add(new ArticuloDto
+                articlesResponse.Articles.ForEach(t => responseList.Add(new NewsArticleDto
                 {
                     Title = t.Title,
                     Author = t.Author,

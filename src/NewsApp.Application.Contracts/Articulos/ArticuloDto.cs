@@ -1,10 +1,9 @@
 ﻿using System;
-using Volo.Abp.Domain.Entities;
-
+using Volo.Abp.Application.Dtos;
 
 namespace NewsApp.Articulos;
 
-public class Articulo : Entity<int>
+public class ArticuloDto : EntityDto<int>
 {
     public string? Title { get; set; } = string.Empty;
 
@@ -18,7 +17,7 @@ public class Articulo : Entity<int>
 
     public DateTime? PublishedAt { get; set; } = DateTime.Now;
 
-    public string? Content { get; set; } = string.Empty;    
+    public string? Content { get; set; } = string.Empty;
 
 
 }

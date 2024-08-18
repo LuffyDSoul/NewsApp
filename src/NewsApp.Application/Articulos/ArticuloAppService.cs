@@ -13,43 +13,43 @@ namespace NewsApp.Articulos
 {
     public class NewAppService : NewsAppAppService, IArticuloAppService
     {
-    private readonly IRepository<Article, int> _repository;
-    public NewAppService(IRepository<Article, int> repository)
+    private readonly IRepository<Articulo, int> _repository;
+    public NewAppService(IRepository<Articulo, int> repository)
     {
         _repository = repository;
     }
 
-    public async Task<ICollection<ArticleDto>> GetArticulosAsync()
+    public async Task<ICollection<ArticuloDto>> GetArticulosAsync()
     {
         var articulo = await _repository.GetListAsync();
 
-        return ObjectMapper.Map<ICollection<Article>, ICollection<ArticleDto>>(articulo);
+        return ObjectMapper.Map<ICollection<Articulo>, ICollection<ArticuloDto>>(articulo);
     }
 
-    public async Task<ArticleDto> GetArticuloAsync(int id)
+    public async Task<ArticuloDto> GetArticuloAsync(int id)
     {
         var articulo = await _repository.GetAsync(id); // newE porque new es una palabra reservada
 
-        return ObjectMapper.Map<Article, ArticleDto>(articulo);
+        return ObjectMapper.Map<Articulo, ArticuloDto>(articulo);
     }
 
-    public async Task InsertArticuloAsync(ArticleDto articulo)
+    public async Task InsertArticuloAsync(ArticuloDto articulo)
     {
-        var articuloMapped = ObjectMapper.Map<ArticleDto, Article>(articulo);
+        var articuloMapped = ObjectMapper.Map<ArticuloDto, Articulo>(articulo);
 
         await _repository.InsertAsync(articuloMapped);
     }
 
-    public async Task UpdateArticuloAsync(ArticleDto articulo)
+    public async Task UpdateArticuloAsync(ArticuloDto articulo)
     {
-        var articuloMapped = ObjectMapper.Map<ArticleDto, Article>(articulo);
+        var articuloMapped = ObjectMapper.Map<ArticuloDto, Articulo>(articulo);
 
         await _repository.UpdateAsync(articuloMapped);
     }
 
-    public async Task RemoveArticuloAsync(ArticleDto articulo)
+    public async Task RemoveArticuloAsync(ArticuloDto articulo)
         {
-        var articuloMapped = ObjectMapper.Map<ArticleDto, Article>(articulo);
+        var articuloMapped = ObjectMapper.Map<ArticuloDto, Articulo>(articulo);
         await _repository.DeleteAsync(articuloMapped);
     }
 }
