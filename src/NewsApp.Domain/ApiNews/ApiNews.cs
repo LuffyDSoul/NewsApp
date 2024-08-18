@@ -16,7 +16,7 @@ namespace NewsApp.ApiNews
             _newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
         }
 
-        public async Task<ICollection<NewsArticleDto>> GetArticulosAsync(string? Search)
+        public async Task<ICollection<NewsArticleDto>> GetNewsArticleAsync(string? Search)
         {
             ICollection<NewsArticleDto> responseList = new List<NewsArticleDto>();
 

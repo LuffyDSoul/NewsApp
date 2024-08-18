@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NewsApp.Articulos;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,8 +9,8 @@ namespace NewsApp.ApiNews
 {
     public interface IApiNewsService
     {
-        Task<ICollection<NewsArticleDto>> Search(string? Search);
-        Task<ICollection<NewsArticleDto>> SearchFromDate(string? Search, DateTime date);
+        Task<ICollection<ArticuloDto>> Search(string? Search);
+        Task<ICollection<ArticuloDto>> SearchFromDate(string? Search, DateTime date);
 
     }
 }

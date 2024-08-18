@@ -6,6 +6,6 @@ namespace NewsApp.ApiNews
 {
     public interface IApiNews
     {
-        Task<ICollection<NewsArticleDto>> GetArticulosAsync(string? Search);
+        Task<ICollection<NewsArticleDto>> GetNewsArticleAsync(string? Search);
     }
 }
