@@ -28,7 +28,7 @@ namespace NewsApp.Articulos
 
     public async Task<ArticuloDto> GetArticuloAsync(int id)
     {
-        var articulo = await _repository.GetAsync(id); // newE porque new es una palabra reservada
+        var articulo = await _repository.GetAsync(id); 
 
         return ObjectMapper.Map<Articulo, ArticuloDto>(articulo);
     }

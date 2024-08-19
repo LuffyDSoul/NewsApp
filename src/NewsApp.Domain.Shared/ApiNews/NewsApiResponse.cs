@@ -10,7 +10,7 @@ namespace NewsApp.ApiNews
     {
         public string Status { get; set; }
         public int TotalResults { get; set; }
-        public List<NewsArticleDto> Articles { get; set; }
+        public ICollection<NewsArticleDto> Articles { get; set; }
     }
     public class NewsArticleDto
     {

@@ -1,4 +1,6 @@
-﻿using Volo.Abp.Account;
+﻿using Microsoft.Extensions.DependencyInjection;
+using NewsApp.ApiNews;
+using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.FeatureManagement;
 using Volo.Abp.Identity;
@@ -27,5 +29,6 @@ public class NewsAppApplicationModule : AbpModule
         {
             options.AddMaps<NewsAppApplicationModule>();
         });
+    context.Services.AddTransient<IApiNews, ApiNewsService>();
     }
 }
