@@ -4,49 +4,45 @@ using NewsAPI.Constants;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace NewsApp.ApiNews
 {
     public class ApiNewsService : IApiNews
     {
-        private readonly NewsApiClient _newsApiClient;
+        NewsApiClient newsApiClient;
 
-        public ApiNewsService()
-        {
-            _newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
-        }
 
-        public async Task<ICollection<NewsArticleDto>> GetNewsArticleAsync(string? Search)
+       public async Task<ICollection<NewsArticleDto>> GetNewsArticleAsync(string? Search)
         {
+            // init with your API key
+            newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
             ICollection<NewsArticleDto> responseList = new List<NewsArticleDto>();
-
-            var articlesResponse = _newsApiClient.GetEverything(new EverythingRequest
+            var articlesResponse = await newsApiClient.GetEverythingAsync(new EverythingRequest
             {
-                Q = Search ?? "Apple", //Si no hay parametro de entrada se buscan las noticias relacionadas con Apple
+                Q = "Apple",
                 SortBy = SortBys.Popularity,
                 Language = Languages.EN,
                 From = new DateTime(2018, 1, 25),
-                PageSize = 5 // Para no pasarnos del límite de la API
+                PageSize = 5 //PageSize es el límite de cantidad de noticias que queres que te busque
             });
-
             if (articlesResponse.Status == Statuses.Ok)
             {
+                // total results found
+                //Console.WriteLine(articlesResponse.TotalResults);
+                // here's the first 20
                 articlesResponse.Articles.ForEach(t => responseList.Add(new NewsArticleDto
                 {
-                    Title = t.Title,
                     Author = t.Author,
+                    Title = t.Title,
                     Description = t.Description,
                     Url = t.Url,
-                    PublishedAt = t.PublishedAt,
+                    PublishedAt = (DateTime)t.PublishedAt,
                     UrlToImage = t.UrlToImage,
                     Content = t.Content
                 }));
-                return responseList;
             }
-            else
-            {
-                throw new ApplicationException("No se pudieron obtener noticias desde NewsAPI, error: " + articlesResponse.Error.Code);
-            }
+            return responseList;
         }
     }
 }

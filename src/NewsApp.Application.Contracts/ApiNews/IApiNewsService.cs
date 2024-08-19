@@ -10,7 +10,6 @@ namespace NewsApp.ApiNews
     public interface IApiNewsService
     {
         Task<ICollection<ArticuloDto>> Search(string? Search);
-        Task<ICollection<ArticuloDto>> SearchFromDate(string? Search, DateTime date);
 
     }
 }

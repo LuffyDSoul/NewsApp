@@ -21,27 +21,7 @@ namespace NewsApp.ApiNews
         {
             var news = await _apiNews.GetNewsArticleAsync(Search);
 
-            return ManualMapper.MapArticlesToNews(news);
+            return ManualMapper.MapArticlesToNewsArticles(news);
         }
-
-        public async Task<ICollection<ArticuloDto>> SearchFromDate(string? Search, DateTime date)
-        {
-            // Este código sería en el caso que busquemos noticias desde la API, pero necesitamos simular (para el testing) que encontramos una noticia nueva
-            // así que utilizaremos nuestro propio repositorio de noticias, donde se agregó una nueva el día después de la creación de la alerta
-            var news = await _apiNews.GetNewsArticleAsync(Search);
-            var newsFromDate = new List<NewsArticleDto>();
-
-            foreach (NewsArticleDto newD in news)
-            {
-                if (newD.PublishedAt >= date)
-                {
-                    newsFromDate.Add(newD);
-                }
-            };
-
-            return ManualMapper.MapArticlesToNews(newsFromDate);
-        }
-
-
     }
 }

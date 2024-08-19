@@ -41,7 +41,6 @@ public class NewsAppDbContext :
      */
 
     //Identity
-    public DbSet<Articulo> Articulos { get; set; }
     public DbSet<IdentityUser> Users { get; set; }
     public DbSet<IdentityRole> Roles { get; set; }
     public DbSet<IdentityClaimType> ClaimTypes { get; set; }
@@ -55,6 +54,11 @@ public class NewsAppDbContext :
     public DbSet<TenantConnectionString> TenantConnectionStrings { get; set; }
 
     #endregion
+    #region Entidades de dominio
+    public DbSet<Articulo> Articulos { get; set; }
+    //public DbSet<Theme> Themes { get; set; }
+    #endregion
+
 
     public NewsAppDbContext(DbContextOptions<NewsAppDbContext> options)
         : base(options)
@@ -79,12 +83,28 @@ public class NewsAppDbContext :
 
         /* Configure your own tables/entities inside here */
 
-        // se creo la entidad articulo
+        //Entidad Theme
+        /*builder.Entity<Theme>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "Themes", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            b.Property(x => x.Name).IsRequired().HasMaxLength(128);
+        });*/
+
+        //Entidad Artículo
         builder.Entity<Articulo>(b =>
         {
-         b.ToTable(NewsAppConsts.DbTablePrefix + "Articulos", NewsAppConsts.DbSchema);
-            b.ConfigureByConvention(); //auto configure for the base class props
-      
+            b.ToTable(NewsAppConsts.DbTablePrefix + "Articulos", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+
+            b.Property(x => x.Author).IsRequired().HasMaxLength(128);
+            b.Property(x => x.Title).IsRequired().HasMaxLength(128);
+            b.Property(x => x.Description).IsRequired();
+            b.Property(x => x.Content).IsRequired();
+            b.Property(x => x.PublishedAt).IsRequired();
+            b.Property(x => x.Url).IsRequired().HasMaxLength(128);
+            b.Property(x => x.UrlToImage).HasMaxLength(128);
+
         });
     }
 }

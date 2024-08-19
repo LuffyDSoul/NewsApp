@@ -11,7 +11,7 @@ namespace NewsApp.ApiNews
 {
     public class ManualMapper
     {
-        public static ICollection<ArticuloDto> MapArticlesToNews(ICollection<NewsArticleDto> articles)
+        public static ICollection<ArticuloDto> MapArticlesToNewsArticles(ICollection<NewsArticleDto> articles)
         {
             var newsList = new List<ArticuloDto>();
 
@@ -33,19 +33,5 @@ namespace NewsApp.ApiNews
 
             return newsList;
         }
-
-        /*private static DateTime ParsePublishedAt(string publishedAt)
-        {
-            DateTime result;
-
-            // Intenta analizar la cadena en formato 'yyyy/MM/dd'
-            if (DateTime.TryParseExact(publishedAt, "yyyy/MM/dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out result))
-            {
-                return result;
-            }
-
-            // Si no se puede analizar, devuelve DateTime.MinValue o maneja el caso según tus necesidades
-            return DateTime.MinValue;
-        }*/
     }
 }
