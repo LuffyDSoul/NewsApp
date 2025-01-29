@@ -18,7 +18,7 @@ namespace NewsApp.News
             ICollection<ArticleDto> responseList = new List<ArticleDto>();
 
             // init with your API key
-            var newsApiClient = new NewsApiClient("8dbe7bd0639844c5b12f46cdcfad503f");
+            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");//Se cambio esto
             var articlesResponse = await newsApiClient.GetEverythingAsync(new EverythingRequest
             {
                 Q = query,
