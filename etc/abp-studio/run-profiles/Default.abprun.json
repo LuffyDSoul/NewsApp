@@ -1,0 +1,15 @@
+{
+  "folders": {
+    "items": {
+      "NewsApp": {}
+    }
+  },
+  "applications": {
+    "NewsApp.HttpApi.Host": {
+      "type": "dotnet-project",
+      "path": "../../../src/NewsApp.HttpApi.Host/NewsApp.HttpApi.Host.csproj",
+      "launchUrl": "https://localhost:44341",
+      "folder": "NewsApp"
+    }
+  }
+}

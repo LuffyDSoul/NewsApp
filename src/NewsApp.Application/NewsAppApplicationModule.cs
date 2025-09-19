@@ -1,5 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NewsApp.News;
+using NewsApp.Lists;
+using NewsApp.Alerts;
+using NewsApp.Monitoring;
 using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.FeatureManagement;
@@ -32,5 +35,10 @@ public class NewsAppApplicationModule : AbpModule
 
         //se registra el servicio de noticias. Deberia registrarse solo, pero como me dio error lo incorporo aca
         context.Services.AddTransient<INewsService, NewsApiService>();
+        
+        // Register additional application services
+        context.Services.AddTransient<IReadingListAppService, ReadingListAppService>();
+        context.Services.AddTransient<IAlertAppService, AlertAppService>();
+        context.Services.AddTransient<IMonitoringAppService, MonitoringAppService>();
     }
 }
