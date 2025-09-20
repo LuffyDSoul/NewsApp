@@ -18,26 +18,40 @@ namespace NewsApp.News
             ICollection<ArticleDto> responseList = new List<ArticleDto>();
 
             // init with your API key
-            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");//Se cambio esto
+            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            
             var articlesResponse = await newsApiClient.GetEverythingAsync(new EverythingRequest
             {
                 Q = query,
                 SortBy = SortBys.Popularity,
                 Language = Languages.EN,
-                // consultamos de un mes para atras ya que es lo que permite la api gratis
-                From = DateTime.Now.AddMonths(-1),
-                PageSize = 5 // Para no pasarnos del límite de la API
-            }) ;
+                // Mejorado: usar fecha más reciente para obtener noticias actuales
+                From = DateTime.Now.AddDays(-7), // Últimos 7 días en lugar de 1 mes
+                To = DateTime.Now, // Hasta hoy
+                PageSize = 20 // Aumentado a 20 para más resultados
+            });
 
-            //TODO: se deberia lanzar una excepcion si la consulta a la api da error.
+            // Mejorado: manejar errores apropiadamente
             if (articlesResponse.Status == Statuses.Ok)
             {
-                articlesResponse.Articles.ForEach( t=> responseList.Add(new ArticleDto {  Author = t.Author, 
-                                                                                          Title = t.Title,
-                                                                                          Description = t.Description,
-                                                                                          Url = t.Url,
-                                                                                          PublishedAt = t.PublishedAt
-                }));                                
+                if (articlesResponse.Articles != null && articlesResponse.Articles.Any())
+                {
+                    articlesResponse.Articles.ForEach(t => responseList.Add(new ArticleDto 
+                    {  
+                        Author = t.Author ?? "Unknown", 
+                        Title = t.Title ?? "",
+                        Description = t.Description ?? "",
+                        Url = t.Url ?? "",
+                        UrlToImage = t.UrlToImage ?? "",
+                        PublishedAt = t.PublishedAt,
+                        Content = t.Content ?? ""
+                    }));
+                }
+            }
+            else
+            {
+                // Log del error o manejo apropiado sin acceder a Message
+                throw new InvalidOperationException($"NewsAPI error: Status = {articlesResponse.Status}");
             }
             
             return responseList;
