@@ -132,11 +132,12 @@ public class NewsAppHttpApiHostModule : AbpModule
         {
             options.ConventionalControllers.Create(typeof(NewsAppApplicationModule).Assembly, opts =>
             {
-                opts.RootPath = "api/app";
+                opts.RootPath = "app";
                 opts.RemoteServiceName = "Default";
-                opts.TypePredicate = type => type.Namespace?.StartsWith("NewsApp.") == true &&
-                                           !type.Namespace.Contains(".News.") && // Exclude News services since we have explicit controllers
-                                           type.Name.EndsWith("AppService");
+                opts.TypePredicate = type => 
+                    type.Namespace?.StartsWith("NewsApp.") == true &&
+                    !type.Namespace.Contains(".News.") && // Excluye servicios de noticias
+                    type.Name.EndsWith("AppService");
             });
         });
     }

@@ -105,9 +105,9 @@ namespace NewsApp.News
     }
 
     // Legacy DTO for backward compatibility
-    [Obsolete("Use NewsArticleDto instead")]
-    public class NewsDto
-    {
+   //[Obsolete("Use NewsArticleDto instead")]
+       public class NewsDto
+      {
         public string Author { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;

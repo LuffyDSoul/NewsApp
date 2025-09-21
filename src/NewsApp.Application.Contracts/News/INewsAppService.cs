@@ -108,7 +108,7 @@ namespace NewsApp.News
         Task<bool> TestConnectionAsync();
 
         // Legacy method for backward compatibility
-        [Obsolete("Use SearchAsync with NewsSearchDto instead")]
-        Task<ICollection<NewsDto>> Search(string query);
+//        [Obsolete("Use SearchAsync with NewsSearchDto instead")]
+//        Task<ICollection<NewsDto>> Search(string query);
     }
 }
