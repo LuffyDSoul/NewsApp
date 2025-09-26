@@ -130,15 +130,26 @@ public class NewsAppHttpApiHostModule : AbpModule
     {
         Configure<AbpAspNetCoreMvcOptions>(options =>
         {
+            // Configuración general para otros servicios (excluyendo News)
             options.ConventionalControllers.Create(typeof(NewsAppApplicationModule).Assembly, opts =>
             {
-                opts.RootPath = "app";
+                opts.RootPath = "api/app";
                 opts.RemoteServiceName = "Default";
                 opts.TypePredicate = type => 
                     type.Namespace?.StartsWith("NewsApp.") == true &&
                     !type.Namespace.Contains(".News.") && // Excluye servicios de noticias
                     type.Name.EndsWith("AppService");
             });
+            
+            // Comentamos temporalmente la configuración de News para usar controller manual
+            // options.ConventionalControllers.Create(typeof(NewsAppApplicationModule).Assembly, opts =>
+            // {
+            //     opts.RootPath = "api/news";
+            //     opts.RemoteServiceName = "News";
+            //     opts.TypePredicate = type => 
+            //         type.Namespace?.Contains(".News.") == true &&
+            //         type.Name.EndsWith("AppService");
+            // });
         });
     }
 
