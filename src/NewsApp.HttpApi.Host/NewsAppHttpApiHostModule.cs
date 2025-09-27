@@ -130,23 +130,41 @@ public class NewsAppHttpApiHostModule : AbpModule
     {
         Configure<AbpAspNetCoreMvcOptions>(options =>
         {
-            options.ConventionalControllers.Create(typeof(NewsAppApplicationModule).Assembly);
+            options.ConventionalControllers.Create(typeof(NewsAppApplicationModule).Assembly, opts =>
+            {
+                opts.RootPath = "api/app";
+                opts.RemoteServiceName = "Default";
+                opts.TypePredicate = type => type.Namespace?.StartsWith("NewsApp.") == true &&
+                                           !type.Namespace.Contains(".News.") && // Exclude News services since we have explicit controllers
+                                           type.Name.EndsWith("AppService");
+            });
         });
     }
 
     private static void ConfigureSwaggerServices(ServiceConfigurationContext context, IConfiguration configuration)
     {
         context.Services.AddAbpSwaggerGenWithOAuth(
-            configuration["AuthServer:Authority"],
+            configuration["AuthServer:Authority"] ?? "",
             new Dictionary<string, string>
             {
-                    {"NewsApp", "NewsApp API"}
+                {"NewsApp", "NewsApp API"}
             },
             options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo { Title = "NewsApp API", Version = "v1" });
                 options.DocInclusionPredicate((docName, description) => true);
                 options.CustomSchemaIds(type => type.FullName);
+                
+                // Add XML comments if available
+                var xmlFile = $"{typeof(NewsAppHttpApiHostModule).Assembly.GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                if (File.Exists(xmlPath))
+                {
+                    options.IncludeXmlComments(xmlPath);
+                }
+                
+                // Resolve conflicting actions
+                options.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
             });
     }
 
@@ -202,13 +220,19 @@ public class NewsAppHttpApiHostModule : AbpModule
         app.UseUnitOfWork();
         app.UseAuthorization();
 
-        app.UseSwagger();
+        // Configure Swagger middleware
+        app.UseSwagger(c =>
+        {
+            c.RouteTemplate = "swagger/{documentName}/swagger.json";
+        });
+        
         app.UseAbpSwaggerUI(c =>
         {
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "NewsApp API");
+            c.RoutePrefix = "swagger";
 
             var configuration = context.ServiceProvider.GetRequiredService<IConfiguration>();
-            c.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
+            c.OAuthClientId(configuration["AuthServer:SwaggerClientId"] ?? "NewsApp_Swagger");
             c.OAuthScopes("NewsApp");
         });
 

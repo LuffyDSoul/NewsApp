@@ -1,0 +1,19 @@
+{
+  "id": "ba066bad-8763-474f-bfd9-871703b4b8fe",
+  "template": "empty",
+  "modules": {
+    "NewsApp": {
+      "path": "NewsApp.abpmdl"
+    }
+  },
+  "runProfiles": {
+    "Default": {
+      "path": "etc/abp-studio/run-profiles/Default.abprun.json"
+    }
+  },
+  "versions": {
+    "AbpFramework": "9.3.2",
+    "AbpCommercial": "9.3.2",
+    "LeptonX": "4.3.2"
+  }
+}

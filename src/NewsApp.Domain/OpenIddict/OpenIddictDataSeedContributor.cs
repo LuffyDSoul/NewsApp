@@ -83,7 +83,7 @@ public class OpenIddictDataSeedContributor : IDataSeedContributor, ITransientDep
         var webClientId = configurationSection["NewsApp_Web:ClientId"];
         if (!webClientId.IsNullOrWhiteSpace())
         {
-            var webClientRootUrl = configurationSection["NewsApp_Web:RootUrl"].EnsureEndsWith('/');
+            var webClientRootUrl = configurationSection["NewsApp_Web:RootUrl"]?.EnsureEndsWith('/') ?? "/";
 
             /* NewsApp_Web client is only needed if you created a tiered
              * solution. Otherwise, you can delete this client. */
@@ -153,7 +153,7 @@ public class OpenIddictDataSeedContributor : IDataSeedContributor, ITransientDep
         if (!blazorServerTieredClientId.IsNullOrWhiteSpace())
         {
             var blazorServerTieredRootUrl =
-                configurationSection["NewsApp_BlazorServerTiered:RootUrl"].EnsureEndsWith('/');
+                configurationSection["NewsApp_BlazorServerTiered:RootUrl"]?.EnsureEndsWith('/') ?? "/";
 
             await CreateApplicationAsync(
                 name: blazorServerTieredClientId!,
@@ -221,7 +221,7 @@ public class OpenIddictDataSeedContributor : IDataSeedContributor, ITransientDep
         
         var application = new AbpApplicationDescriptor {
             ClientId = name,
-            Type = type,
+            ClientType = type,
             ClientSecret = secret,
             ConsentType = consentType,
             DisplayName = displayName,
