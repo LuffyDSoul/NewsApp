@@ -3,7 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NewsService } from '../../../core/services/news.service';
+import { ReadingListService } from '../../../core/services/reading-list.service';
 import { NewsArticleDto } from '../../../shared/models/news.model';
+import { ReadingListDto, SaveArticleDto, SavedArticleDto, CreateReadingListDto } from '../../../shared/models/reading-list.model';
 
 @Component({
   selector: 'app-news-list',
@@ -14,9 +16,19 @@ import { NewsArticleDto } from '../../../shared/models/news.model';
       <div class="header-section">
         <h2>Latest News</h2>
         
-        <!-- Future: Reading Lists Quick Access will be here -->
-        <div class="reading-lists-info" *ngIf="false">
-          <p>💡 <strong>Tip:</strong> You'll be able to save articles to reading lists once the feature is fully active!</p>
+        <!-- Reading Lists Quick Access -->
+        <div class="reading-lists-section" *ngIf="readingLists.length > 0">
+          <h4>📚 My Reading Lists</h4>
+          <div class="reading-lists-bar">
+            <div class="reading-list-item" 
+                 *ngFor="let list of readingLists" 
+                 (click)="viewReadingList(list.id)"
+                 [title]="list.description || list.name">
+              <span class="list-name">{{ list.name }}</span>
+              <span class="list-count">{{ list.unreadCount }}/{{ list.articleCount }}</span>
+            </div>
+            <button (click)="showCreateListModal = true" class="add-list-btn" title="Create new reading list">+</button>
+          </div>
         </div>
         
         <div class="search-section">
@@ -69,9 +81,21 @@ import { NewsArticleDto } from '../../../shared/models/news.model';
               <a [href]="article.url" target="_blank" rel="noopener noreferrer" class="read-more">
                 Read Full Article
               </a>
-              <button class="save-btn-placeholder" title="Save functionality coming soon!" disabled>
-                💾 Save for Later
-              </button>
+              <div class="save-actions">
+                <button 
+                  (click)="saveArticle(article)" 
+                  class="save-btn"
+                  [class.saved]="isArticleSaved(article.url)"
+                  [disabled]="savingArticles.has(article.url)">
+                  {{ getSaveButtonText(article.url) }}
+                </button>
+                <div class="save-dropdown" *ngIf="!isArticleSaved(article.url) && readingLists.length > 0">
+                  <select (change)="saveToList(article, $event)" class="list-select">
+                    <option value="">Save to list...</option>
+                    <option *ngFor="let list of readingLists" [value]="list.id">{{ list.name }}</option>
+                  </select>
+                </div>
+              </div>
               <span class="author" *ngIf="article.author">By {{ article.author }}</span>
             </div>
           </div>
@@ -95,6 +119,38 @@ import { NewsArticleDto } from '../../../shared/models/news.model';
           {{ connectionStatus ? '✅ Backend connection successful' : '❌ Backend connection failed' }}
         </p>
       </div>
+
+      <!-- Create List Modal -->
+      <div class="modal" *ngIf="showCreateListModal" (click)="closeCreateModal($event)">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <h3>Create New Reading List</h3>
+          <div class="form-group">
+            <label>Name:</label>
+            <input type="text" [(ngModel)]="newListName" placeholder="Enter list name" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Description:</label>
+            <textarea [(ngModel)]="newListDescription" placeholder="Optional description" class="form-textarea"></textarea>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" [(ngModel)]="newListIsPublic"> Make public
+            </label>
+          </div>
+          <div class="modal-actions">
+            <button (click)="createReadingList()" class="create-btn" [disabled]="!newListName.trim() || creatingList">
+              {{ creatingList ? 'Creating...' : 'Create' }}
+            </button>
+            <button (click)="cancelCreateList()" class="cancel-btn">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Success notification -->
+      <div class="notification success" *ngIf="showSuccessNotification">
+        <span>✅ {{ successMessage }}</span>
+        <button (click)="showSuccessNotification = false" class="close-notification">×</button>
+      </div>
     </div>
   `,
   styles: [`
@@ -113,29 +169,235 @@ import { NewsArticleDto } from '../../../shared/models/news.model';
       margin-bottom: 20px;
     }
 
-    .reading-lists-info {
-      background: #e7f3ff;
-      border: 1px solid #b3d7ff;
-      border-radius: 8px;
-      padding: 15px;
+    /* Reading Lists Section */
+    .reading-lists-section {
       margin-bottom: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #e9ecef;
     }
 
-    .reading-lists-info p {
-      margin: 0;
-      color: #0056b3;
+    .reading-lists-section h4 {
+      margin: 0 0 10px 0;
+      color: #495057;
+      font-size: 1em;
     }
 
-    .save-btn-placeholder {
-      padding: 4px 12px;
-      background: #6c757d;
+    .reading-lists-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .reading-list-item {
+      padding: 6px 12px;
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.9em;
+    }
+
+    .reading-list-item:hover {
+      background: #007bff;
+      color: white;
+      border-color: #007bff;
+      transform: translateY(-1px);
+    }
+
+    .list-name {
+      margin-right: 8px;
+      font-weight: 500;
+    }
+
+    .list-count {
+      font-size: 0.8em;
+      opacity: 0.8;
+      background: rgba(0,0,0,0.1);
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    .add-list-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px dashed #007bff;
+      background: white;
+      color: #007bff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .add-list-btn:hover {
+      background: #007bff;
+      color: white;
+      transform: scale(1.1);
+    }
+
+    /* Save Actions */
+    .save-actions {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .save-btn {
+      padding: 6px 12px;
+      background: #28a745;
       color: white;
       border: none;
       border-radius: 15px;
-      cursor: not-allowed;
+      cursor: pointer;
       font-size: 0.8em;
+      transition: all 0.2s ease;
     }
 
+    .save-btn:hover {
+      background: #218838;
+      transform: translateY(-1px);
+    }
+
+    .save-btn.saved {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .save-btn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .list-select {
+      font-size: 0.8em;
+      padding: 4px 8px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      background: white;
+    }
+
+    /* Modal Styles */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .modal-content h3 {
+      margin-top: 0;
+      color: #343a40;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    .form-input, .form-textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .form-textarea {
+      resize: vertical;
+      height: 60px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .create-btn, .cancel-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .create-btn {
+      background: #007bff;
+      color: white;
+    }
+
+    .create-btn:hover {
+      background: #0056b3;
+    }
+
+    .create-btn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .cancel-btn {
+      background: #6c757d;
+      color: white;
+    }
+
+    .cancel-btn:hover {
+      background: #545b62;
+    }
+
+    /* Notification */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 5px;
+      z-index: 1001;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .notification.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .close-notification {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+
+    /* Rest of existing styles... */
     .search-section {
       display: flex;
       gap: 10px;
@@ -357,13 +619,198 @@ export class NewsListComponent implements OnInit {
   connectionTested = false;
   connectionStatus = false;
 
+  // Reading list properties
+  readingLists: ReadingListDto[] = [];
+  savedArticleUrls = new Set<string>();
+  savingArticles = new Set<string>();
+  
+  // Modal properties
+  showCreateListModal = false;
+  newListName = '';
+  newListDescription = '';
+  newListIsPublic = false;
+  creatingList = false;
+
+  // Notification properties
+  showSuccessNotification = false;
+  successMessage = '';
+
   constructor(
     private newsService: NewsService,
+    private readingListService: ReadingListService,
     private router: Router
   ) {}
 
   ngOnInit() {
     this.loadLatestNews();
+    this.loadReadingLists();
+    this.loadSavedArticles();
+  }
+
+  loadReadingLists() {
+    this.readingListService.getMyReadingLists().subscribe({
+      next: (lists: ReadingListDto[]) => {
+        this.readingLists = lists;
+      },
+      error: (err: any) => {
+        console.error('Error loading reading lists:', err);
+      }
+    });
+  }
+
+  loadSavedArticles() {
+    this.readingListService.getMySavedArticles().subscribe({
+      next: (articles: SavedArticleDto[]) => {
+        this.savedArticleUrls = new Set(articles.map(a => a.url));
+      },
+      error: (err: any) => {
+        console.error('Error loading saved articles:', err);
+      }
+    });
+  }
+
+  isArticleSaved(url: string): boolean {
+    return this.savedArticleUrls.has(url);
+  }
+
+  getSaveButtonText(url: string): string {
+    if (this.savingArticles.has(url)) {
+      return '💾 Saving...';
+    }
+    return this.isArticleSaved(url) ? '✅ Saved' : '💾 Save for Later';
+  }
+
+  saveArticle(article: NewsArticleDto) {
+    if (this.isArticleSaved(article.url) || this.savingArticles.has(article.url)) {
+      return;
+    }
+
+    this.savingArticles.add(article.url);
+
+    const saveData: SaveArticleDto = {
+      source: article.source || '',
+      title: article.title,
+      description: article.description,
+      url: article.url,
+      urlToImage: article.urlToImage,
+      publishedAt: article.publishedAt,
+      content: article.content,
+      languageCode: article.languageCode || 'en',
+      author: article.author
+    };
+
+    this.readingListService.saveArticle(saveData).subscribe({
+      next: () => {
+        this.savedArticleUrls.add(article.url);
+        this.savingArticles.delete(article.url);
+        this.loadReadingLists(); // Refresh to update counts
+        this.showSuccessMessage('Article saved for later reading!');
+      },
+      error: (err: any) => {
+        console.error('Error saving article:', err);
+        this.savingArticles.delete(article.url);
+        this.showErrorMessage('Failed to save article. Please try again.');
+      }
+    });
+  }
+
+  saveToList(article: NewsArticleDto, event: any) {
+    const listId = event.target.value;
+    if (!listId || this.savingArticles.has(article.url)) {
+      return;
+    }
+
+    this.savingArticles.add(article.url);
+
+    const saveData: SaveArticleDto = {
+      readingListId: listId,
+      source: article.source || '',
+      title: article.title,
+      description: article.description,
+      url: article.url,
+      urlToImage: article.urlToImage,
+      publishedAt: article.publishedAt,
+      content: article.content,
+      languageCode: article.languageCode || 'en',
+      author: article.author
+    };
+
+    this.readingListService.saveArticle(saveData).subscribe({
+      next: () => {
+        this.savedArticleUrls.add(article.url);
+        this.savingArticles.delete(article.url);
+        this.loadReadingLists(); // Refresh to update counts
+        const listName = this.readingLists.find(l => l.id === listId)?.name || 'list';
+        this.showSuccessMessage(`Article saved to "${listName}"!`);
+        event.target.value = ''; // Reset dropdown
+      },
+      error: (err: any) => {
+        console.error('Error saving article to list:', err);
+        this.savingArticles.delete(article.url);
+        this.showErrorMessage('Failed to save article to list. Please try again.');
+        event.target.value = ''; // Reset dropdown
+      }
+    });
+  }
+
+  createReadingList() {
+    if (!this.newListName.trim() || this.creatingList) {
+      return;
+    }
+
+    this.creatingList = true;
+
+    const createData: CreateReadingListDto = {
+      name: this.newListName.trim(),
+      description: this.newListDescription.trim() || undefined,
+      isPublic: this.newListIsPublic,
+      sortOrder: this.readingLists.length
+    };
+
+    this.readingListService.createReadingList(createData).subscribe({
+      next: (newList) => {
+        this.loadReadingLists();
+        this.cancelCreateList();
+        this.showSuccessMessage(`Reading list "${newList.name}" created!`);
+      },
+      error: (err: any) => {
+        console.error('Error creating reading list:', err);
+        this.creatingList = false;
+        this.showErrorMessage('Failed to create reading list. Please try again.');
+      }
+    });
+  }
+
+  cancelCreateList() {
+    this.showCreateListModal = false;
+    this.newListName = '';
+    this.newListDescription = '';
+    this.newListIsPublic = false;
+    this.creatingList = false;
+  }
+
+  closeCreateModal(event: any) {
+    if (event.target === event.currentTarget) {
+      this.cancelCreateList();
+    }
+  }
+
+  viewReadingList(listId: string) {
+    // Navigate to reading lists page with the specific list selected
+    this.router.navigate(['/reading-lists'], { queryParams: { list: listId } });
+  }
+
+  showSuccessMessage(message: string) {
+    this.successMessage = message;
+    this.showSuccessNotification = true;
+    setTimeout(() => {
+      this.showSuccessNotification = false;
+    }, 3000);
+  }
+
+  showErrorMessage(message: string) {
+    // You could implement error notifications similarly
+    console.error(message);
   }
 
   getImageSrc(article: NewsArticleDto): string {
