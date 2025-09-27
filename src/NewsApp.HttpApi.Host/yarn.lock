@@ -6,228 +6,228 @@ __metadata:
   cacheKey: 10c0
 
 "@abp/aspnetcore.mvc.ui.theme.leptonxlite@npm:~4.3.2":
-  version: 4.3.2
-  resolution: "@abp/aspnetcore.mvc.ui.theme.leptonxlite@npm:4.3.2"
+  version: 4.3.4
+  resolution: "@abp/aspnetcore.mvc.ui.theme.leptonxlite@npm:4.3.4"
   dependencies:
-    "@abp/aspnetcore.mvc.ui.theme.shared": "npm:~9.3.2"
-  checksum: 10c0/ad98b940c16e10f3a2b362150702198c881900743bcff417f38abf6ab10dd280dd0099d2e58ab6ade7d9a01812ac6afa39f44651d1e97e90d1455b17403203b9
+    "@abp/aspnetcore.mvc.ui.theme.shared": "npm:~9.3.4"
+  checksum: 10c0/4faf6e0158f370428b0db563c94d8ed0a7278dfe1d924196acb6fb811980a6c3db64cc0c9481f0eb612d1596402e8bb5d9be6f0916f4db626c6033bd4a88e05b
   languageName: node
   linkType: hard
 
-"@abp/aspnetcore.mvc.ui.theme.shared@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/aspnetcore.mvc.ui.theme.shared@npm:9.3.2"
+"@abp/aspnetcore.mvc.ui.theme.shared@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/aspnetcore.mvc.ui.theme.shared@npm:9.3.4"
   dependencies:
-    "@abp/aspnetcore.mvc.ui": "npm:~9.3.2"
-    "@abp/bootstrap": "npm:~9.3.2"
-    "@abp/bootstrap-datepicker": "npm:~9.3.2"
-    "@abp/bootstrap-daterangepicker": "npm:~9.3.2"
-    "@abp/datatables.net-bs5": "npm:~9.3.2"
-    "@abp/font-awesome": "npm:~9.3.2"
-    "@abp/jquery-form": "npm:~9.3.2"
-    "@abp/jquery-validation-unobtrusive": "npm:~9.3.2"
-    "@abp/lodash": "npm:~9.3.2"
-    "@abp/luxon": "npm:~9.3.2"
-    "@abp/malihu-custom-scrollbar-plugin": "npm:~9.3.2"
-    "@abp/moment": "npm:~9.3.2"
-    "@abp/select2": "npm:~9.3.2"
-    "@abp/sweetalert2": "npm:~9.3.2"
-    "@abp/timeago": "npm:~9.3.2"
-  checksum: 10c0/02cbcdf7062981398634648acdf54ea9beda40b8e47b26e435fb6ecd7b1148a7d2a4e81ca1430f8ce49563515ef1cd23df0a4bdd2a2f2795e50fafb30d384e1c
+    "@abp/aspnetcore.mvc.ui": "npm:~9.3.4"
+    "@abp/bootstrap": "npm:~9.3.4"
+    "@abp/bootstrap-datepicker": "npm:~9.3.4"
+    "@abp/bootstrap-daterangepicker": "npm:~9.3.4"
+    "@abp/datatables.net-bs5": "npm:~9.3.4"
+    "@abp/font-awesome": "npm:~9.3.4"
+    "@abp/jquery-form": "npm:~9.3.4"
+    "@abp/jquery-validation-unobtrusive": "npm:~9.3.4"
+    "@abp/lodash": "npm:~9.3.4"
+    "@abp/luxon": "npm:~9.3.4"
+    "@abp/malihu-custom-scrollbar-plugin": "npm:~9.3.4"
+    "@abp/moment": "npm:~9.3.4"
+    "@abp/select2": "npm:~9.3.4"
+    "@abp/sweetalert2": "npm:~9.3.4"
+    "@abp/timeago": "npm:~9.3.4"
+  checksum: 10c0/3791b5edd8b954551e01c8c3d05e23ccb74df049acb2918bb00191dd8b998f36d7d95315964e99c7ee62a32e8db0c5cba9b6df43ca3033a40a63469da526a1c4
   languageName: node
   linkType: hard
 
-"@abp/aspnetcore.mvc.ui@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/aspnetcore.mvc.ui@npm:9.3.2"
+"@abp/aspnetcore.mvc.ui@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/aspnetcore.mvc.ui@npm:9.3.4"
   dependencies:
     ansi-colors: "npm:^4.1.3"
-  checksum: 10c0/48ae69e7344657fd53d3d416fc692b969420c79e78448e63f9c6cbf8e01209d316f05820e48795ca3203a08de45531d3e45a955a74ef3e1d37a853c343463476
+  checksum: 10c0/246b5ae4932b5d78b97284388e7847a23cb2a65189e6383b773a6e6660efa5fa5f819663e4f3f96528d0845d25a85da0e52515961de6542e70dc2b0d304ae514
   languageName: node
   linkType: hard
 
-"@abp/bootstrap-datepicker@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/bootstrap-datepicker@npm:9.3.2"
+"@abp/bootstrap-datepicker@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/bootstrap-datepicker@npm:9.3.4"
   dependencies:
     bootstrap-datepicker: "npm:^1.10.0"
-  checksum: 10c0/5e3a4aee27d29108a1f4552dbf95c8de350e289e88f0c8452078991b8a74285750191d828ba201aecd8294531a9a03d842e91ccdbdad43723daa10abf2f40a04
+  checksum: 10c0/787f640508c1fbd8acb8f9a7d314581272650106f972b06dc548c0c7922b5e1144fa03a789f3634a97107d6ae367d1ca63af08c19cc38b041a9dd986b08d5cd0
   languageName: node
   linkType: hard
 
-"@abp/bootstrap-daterangepicker@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/bootstrap-daterangepicker@npm:9.3.2"
+"@abp/bootstrap-daterangepicker@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/bootstrap-daterangepicker@npm:9.3.4"
   dependencies:
     bootstrap-daterangepicker: "npm:^3.1.0"
-  checksum: 10c0/497c9fb23cead105e085eb8285fdb0169f67cea46d4b6ca665346660c339fe83ef8151a970dfc081bbb311ee60e573052fe708923560fa993d77225f87dbeccd
+  checksum: 10c0/3f3f119366c08d31f18c982e4815f709df1ddea746b8b093702814705cd1b6c3e4105008fd496fb24c098254716249061deb35b4ded1583d667e10c48877d1cc
   languageName: node
   linkType: hard
 
-"@abp/bootstrap@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/bootstrap@npm:9.3.2"
+"@abp/bootstrap@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/bootstrap@npm:9.3.4"
   dependencies:
-    "@abp/core": "npm:~9.3.2"
+    "@abp/core": "npm:~9.3.4"
     bootstrap: "npm:^5.3.3"
-  checksum: 10c0/240154113ba8e43aed8987244344752f431da32afa92fdf072c738cee33b55744c75035b9426494fe10544771f242174fc7337228c44e8bdd731a23ebb492b3a
+  checksum: 10c0/8f3367d5e38c0f4ac396cb678c1da11f2b256fc6ce8c88252c0f5d13e0452aa7c0910d3942a0a99416949217eca0d3eec69aa91a5c86e771d7840268ae871db3
   languageName: node
   linkType: hard
 
-"@abp/core@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/core@npm:9.3.2"
+"@abp/core@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/core@npm:9.3.4"
   dependencies:
-    "@abp/utils": "npm:~9.3.2"
-  checksum: 10c0/666fa7ee22080bba7a8fefc6811ef17f6f28b38eaefe23e457cad96da1bfad4ed1129caa940a876770fd42ed3af77970ddbb97d1da465996ad9971f50006cbb2
+    "@abp/utils": "npm:~9.3.4"
+  checksum: 10c0/1aa33a32ed275c511a7ecf97749f957a723b8cc8a34c2ede4cbc2551555f677b19110e6f824ab2406a2dbcaf3a65e9b2868fb6d008ad6e43400a20536aea3a76
   languageName: node
   linkType: hard
 
-"@abp/datatables.net-bs5@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/datatables.net-bs5@npm:9.3.2"
+"@abp/datatables.net-bs5@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/datatables.net-bs5@npm:9.3.4"
   dependencies:
-    "@abp/datatables.net": "npm:~9.3.2"
+    "@abp/datatables.net": "npm:~9.3.4"
     datatables.net-bs5: "npm:^2.1.8"
-  checksum: 10c0/c767eeb8b73e555064296aca940a49dee2b67d37cce8b4befe3ce5c1a41dc81f92a7fda90d3246884d6a61a391d51f760214e715a40873952cc6ea604204876a
+  checksum: 10c0/51805fd517d27ff1d1c61c0720b5148c910cbcbd297f1fabeda908fca009c8f304d3297d4eedaad8d55d8101c96c8e8a85945ff725e675bddd846d637c75be97
   languageName: node
   linkType: hard
 
-"@abp/datatables.net@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/datatables.net@npm:9.3.2"
+"@abp/datatables.net@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/datatables.net@npm:9.3.4"
   dependencies:
-    "@abp/jquery": "npm:~9.3.2"
+    "@abp/jquery": "npm:~9.3.4"
     datatables.net: "npm:^2.1.8"
-  checksum: 10c0/8eed3fe17555d3b6c0b259f6d3a71828d1c1cdc46ef71587bc0d51990406aa0897dc410e37fe709ef3076bab742f820b71cd29efa1b1620a41e6ed2968f0cbe3
+  checksum: 10c0/5716146b94c0280711253ba574054300f3941a9e673f6c166674645326e215a635474d2a16303af0c2b05945fd9600d19ef2310b7c1d24c223443dac7e59a270
   languageName: node
   linkType: hard
 
-"@abp/font-awesome@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/font-awesome@npm:9.3.2"
+"@abp/font-awesome@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/font-awesome@npm:9.3.4"
   dependencies:
-    "@abp/core": "npm:~9.3.2"
+    "@abp/core": "npm:~9.3.4"
     "@fortawesome/fontawesome-free": "npm:^6.6.0"
-  checksum: 10c0/5ea0dee6c3a857b6ac50a1bd2007f9a81fbd586f8814ab09144e8e50c9c2f320e8b5f98de9264ff307293aeee4700206f84883333ffd21dd994decdf324e155b
+  checksum: 10c0/51411fb97b7800cc40051b550d8a4aaaec7224f76b30a77df01b7c788738f22b6b3b99259395074c053e21b73abb07615fe1152d473e1ac497b16b10c7a5157a
   languageName: node
   linkType: hard
 
-"@abp/jquery-form@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/jquery-form@npm:9.3.2"
+"@abp/jquery-form@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/jquery-form@npm:9.3.4"
   dependencies:
-    "@abp/jquery": "npm:~9.3.2"
+    "@abp/jquery": "npm:~9.3.4"
     jquery-form: "npm:^4.3.0"
-  checksum: 10c0/294450d8495f06d727f39f4f68d47ffd0fa03babe4178e75d12684ed9760d6ba70df0fe08190b651894f453db7840a4d8635e58c7e259894445832abbf61b296
+  checksum: 10c0/29fce6ca81a2bf4bbc7ab5b2a03e62cd95d2463cde71cbbca11793e25e01a8c1e1a463fd7cb0303adcf0e5375acce74877ae14a44c866504de2e9eefab819c9f
   languageName: node
   linkType: hard
 
-"@abp/jquery-validation-unobtrusive@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/jquery-validation-unobtrusive@npm:9.3.2"
+"@abp/jquery-validation-unobtrusive@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/jquery-validation-unobtrusive@npm:9.3.4"
   dependencies:
-    "@abp/jquery-validation": "npm:~9.3.2"
+    "@abp/jquery-validation": "npm:~9.3.4"
     jquery-validation-unobtrusive: "npm:^4.0.0"
-  checksum: 10c0/0087a46b36c0253cc5606c6d70044e97a8604b4d9d239e51eb39ee10489871ba5d7815394235d7a33efca106a7b318c35bcc38c694dc5757153ccf76aed49f75
+  checksum: 10c0/258d68b1576c65ba3fd58c02662eac3b558460813effa0b08f327426674548740350c654f835e13d3b33f9447a8b3d2cc8611f3c0f6c8bdc91c369ceba30b52b
   languageName: node
   linkType: hard
 
-"@abp/jquery-validation@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/jquery-validation@npm:9.3.2"
+"@abp/jquery-validation@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/jquery-validation@npm:9.3.4"
   dependencies:
-    "@abp/jquery": "npm:~9.3.2"
+    "@abp/jquery": "npm:~9.3.4"
     jquery-validation: "npm:^1.21.0"
-  checksum: 10c0/d9616962c83362f0732b7d8eebd9ab826e05eb51aa0f2b35bc48b87ee5a896b10c61bd54cd798f4c6075ab9e5e25b3eebc97ef1432f683e45f8a99b6c251773a
+  checksum: 10c0/a3f1e3f972f2426903f045d9c5afddf1cd670296a6574fd595e8d1ffa75d75dcaa5e94ef1748e2638ff01e615e1b7a84809c449e2f828e8f9dbefbe72da10b82
   languageName: node
   linkType: hard
 
-"@abp/jquery@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/jquery@npm:9.3.2"
+"@abp/jquery@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/jquery@npm:9.3.4"
   dependencies:
-    "@abp/core": "npm:~9.3.2"
+    "@abp/core": "npm:~9.3.4"
     jquery: "npm:~3.7.1"
-  checksum: 10c0/1e55f1cf39f9fc687486d523065314a950b6495a455ca39ef5b3013626023b990fe6651b6c30bb0a29a3fa71c8c81e6041dcaccaed2685ef4a94627e9080daee
+  checksum: 10c0/929c9bd53fbbbd399827f8a92668797f4ae05ca3515287a5933ce07e431631d2629d01ca23b0fd6bcce421868d06e73c9080d40add2eecc0ff0b6871e4926a81
   languageName: node
   linkType: hard
 
-"@abp/lodash@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/lodash@npm:9.3.2"
+"@abp/lodash@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/lodash@npm:9.3.4"
   dependencies:
-    "@abp/core": "npm:~9.3.2"
+    "@abp/core": "npm:~9.3.4"
     lodash: "npm:^4.17.21"
-  checksum: 10c0/e51dac162e2befa266fa2faea6f2a3a90e435cee570f436dc77e0d472dd209407d12aeecdd9da194cb3678dc1b50ce6dc26168f7e9f7970f5dd0481e4673bf96
+  checksum: 10c0/49b9219ea569b13e312c07f2886d6c0d6e1738e3e765bd14160de6024511c63c17eded103ea0e61b54e64ca7f576055c6acd82fbcd5defd1c727e7212eea2f81
   languageName: node
   linkType: hard
 
-"@abp/luxon@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/luxon@npm:9.3.2"
+"@abp/luxon@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/luxon@npm:9.3.4"
   dependencies:
-    "@abp/core": "npm:~9.3.2"
+    "@abp/core": "npm:~9.3.4"
     luxon: "npm:^3.5.0"
-  checksum: 10c0/2ac2b134c5c2e3cbbd6ecb90335ba9e6960dcac732e43575d8d1a372d9cc6015a5bb91013fd620497e4e266f6d4e7216cca4eeab2230fad3b63f0a1dfa170003
+  checksum: 10c0/89ba143cbe2c810e2e49cea94f32c63f85c9ec37424646937948c92e6e041278dc4b6fbbab44ab657ef83853f1b0d89484d0a0b038d6c08548c0e8a3c7d0bbf3
   languageName: node
   linkType: hard
 
-"@abp/malihu-custom-scrollbar-plugin@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/malihu-custom-scrollbar-plugin@npm:9.3.2"
+"@abp/malihu-custom-scrollbar-plugin@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/malihu-custom-scrollbar-plugin@npm:9.3.4"
   dependencies:
-    "@abp/core": "npm:~9.3.2"
+    "@abp/core": "npm:~9.3.4"
     malihu-custom-scrollbar-plugin: "npm:^3.1.5"
-  checksum: 10c0/d32c3cb45dea23c283a64939a9c0635a87c877d394af315c4b3f295ede65a9db6feb305b309198905259b34dbbb1f08775b0dfd00bb7aca88648c68e3a65f981
+  checksum: 10c0/408c0bc6b88829b76a4dc107fa5536d2535c0c8c731d1ef2d8f154781926b5990114e6399dee288db38d9ee0782186a0dc5421528f4c388ff75779aaf5bd2daa
   languageName: node
   linkType: hard
 
-"@abp/moment@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/moment@npm:9.3.2"
+"@abp/moment@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/moment@npm:9.3.4"
   dependencies:
     moment: "npm:^2.30.1"
-  checksum: 10c0/0c59f0dabf8cfeba9a9a24b6a0d2e81ae4d2c16479ba1458964786c9164755c3a89b7aafac930a748507efc0d833144caf3675e3029ac631ae5ab816588a55b9
+  checksum: 10c0/e306506966c8a39251219467f88cb1bcc9865d020d03a9ee4d8e4d9ec239f3b95f431dbdaaa3efd4d8c4843959d90c3a21dc0db83c2f77653498f4829beadcdb
   languageName: node
   linkType: hard
 
-"@abp/select2@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/select2@npm:9.3.2"
+"@abp/select2@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/select2@npm:9.3.4"
   dependencies:
-    "@abp/core": "npm:~9.3.2"
+    "@abp/core": "npm:~9.3.4"
     select2: "npm:^4.0.13"
-  checksum: 10c0/35c128168f330420b69e7f30d0034fb35081a623222354b1823c586df92a4c52226fa69987f5ad8ec8558d6320e58b742c19bac1f21485d4fb4c8dc1fd212a4e
+  checksum: 10c0/8779d5448d1143d7cacab14213bb88617a704b2bd6ad06cdd4488d48eeef968195f72a535e25a2c8fa69c4293356bb3ba1a611f82468a35fe274d8d578689c58
   languageName: node
   linkType: hard
 
-"@abp/sweetalert2@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/sweetalert2@npm:9.3.2"
+"@abp/sweetalert2@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/sweetalert2@npm:9.3.4"
   dependencies:
-    "@abp/core": "npm:~9.3.2"
+    "@abp/core": "npm:~9.3.4"
     sweetalert2: "npm:^11.14.1"
-  checksum: 10c0/8709e40d62abcd50dc79024e86226a4827bcbb0bcc6a3ecad08474cd813f94073ce0e97bb360df2d00df769eb292a4afb549e88d59d04533276cd9f636199174
+  checksum: 10c0/40e5487013137646629be9d36e09fb540abf5cd4e2b68b17b956f075deefdcffa4491e5c55e8704f2c3baa72534fbb60f019f54b7ff43a400d0e73ca01baef48
   languageName: node
   linkType: hard
 
-"@abp/timeago@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/timeago@npm:9.3.2"
+"@abp/timeago@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/timeago@npm:9.3.4"
   dependencies:
-    "@abp/jquery": "npm:~9.3.2"
+    "@abp/jquery": "npm:~9.3.4"
     timeago: "npm:^1.6.7"
-  checksum: 10c0/99bdd3e7f155d26a3a5b14f421b0f2a26b9195fc945dfa7a58056e741fda430f6fbdf9994e938cf384d8a91b5283b1a916942ec7138b92d67ad3f9a248cc40cd
+  checksum: 10c0/92887d64e24fb634f27320f2128dcd9ed2ae67cf770d4e9bb344bd252057545f4fe7f268ad5d29f0a990341ff74bf261273df8ec1a0ecef2b928365d595b5614
   languageName: node
   linkType: hard
 
-"@abp/utils@npm:~9.3.2":
-  version: 9.3.2
-  resolution: "@abp/utils@npm:9.3.2"
+"@abp/utils@npm:~9.3.4":
+  version: 9.3.4
+  resolution: "@abp/utils@npm:9.3.4"
   dependencies:
     just-compare: "npm:^2.3.0"
-  checksum: 10c0/aa5c136be783e9a16da7d2133bc46abcb293089b6c126800e791f039677a2992f35d9cd32ad0b2222e23fb9f4ae68e01033e23f2d723bb26368e3a5116546ebb
+  checksum: 10c0/2f1165eb54a8c592862bd6f8ac6c188266e2b52aae3f4a101851f5ab05b4a1a40a99bb1c791be0382fdeff88891f6a3a54b0df89225694a7df82a1f1054cf86b
   languageName: node
   linkType: hard
 
@@ -246,11 +246,11 @@ __metadata:
   linkType: hard
 
 "bootstrap-datepicker@npm:^1.10.0":
-  version: 1.10.0
-  resolution: "bootstrap-datepicker@npm:1.10.0"
+  version: 1.10.1
+  resolution: "bootstrap-datepicker@npm:1.10.1"
   dependencies:
     jquery: "npm:>=3.4.0 <4.0.0"
-  checksum: 10c0/75acc7596cb7f8be26100885672097e77e2c9f1e4ec1d8ca9a716d3471f4e1167670d099e72f5e278b9bd88dfba31e65627cbcf1e41b0557c5835688b4939333
+  checksum: 10c0/bad08e373b70040f4a62003b46dde2e5bd4a7b73aeffb1d504c0a1736b6beaccf56b908d565980491c7f4329377af8c4cfb7bff9c38480ea689210c7c308dc7d
   languageName: node
   linkType: hard
 
@@ -274,21 +274,21 @@ __metadata:
   linkType: hard
 
 "datatables.net-bs5@npm:^2.1.8":
-  version: 2.3.3
-  resolution: "datatables.net-bs5@npm:2.3.3"
+  version: 2.3.4
+  resolution: "datatables.net-bs5@npm:2.3.4"
   dependencies:
-    datatables.net: "npm:2.3.3"
+    datatables.net: "npm:2.3.4"
     jquery: "npm:>=1.7"
-  checksum: 10c0/85d1010b6b6eb766c7397eb1557bc79ec4a2172cdb893525870899969af8918cc113557403c0884b1c2b1fd041e26fa8b84d74fa246ebd4ce3f00a44ab9639f7
+  checksum: 10c0/27dab5a78fd98aed45fadd40f2b5da551663a8292cdc90384135dfdf99cb1397758b54b0d1934389fb04768fa00ca66be4cc1aca079c3bb13f6265b3c91716fa
   languageName: node
   linkType: hard
 
-"datatables.net@npm:2.3.3, datatables.net@npm:^2.1.8":
-  version: 2.3.3
-  resolution: "datatables.net@npm:2.3.3"
+"datatables.net@npm:2.3.4, datatables.net@npm:^2.1.8":
+  version: 2.3.4
+  resolution: "datatables.net@npm:2.3.4"
   dependencies:
     jquery: "npm:>=1.7"
-  checksum: 10c0/890bf5312469293df93b665137f401aba1b60838d6de7d31673e32b2512e09a10f3d805bd0e750465cdb1d4922fdd1f52bc8009fe847c4f449f2daa3c1c7fb49
+  checksum: 10c0/8683653cf1aacb50cc637c799f73bc91e477ccbf49ec99859e991034ba43c8e01b9c5a245fadcb0d10cbba9dca69989a5a36e886212fb4c62d53cd6e38081287
   languageName: node
   linkType: hard
 
@@ -302,9 +302,11 @@ __metadata:
   linkType: hard
 
 "jquery-mousewheel@npm:>=3.0.6":
-  version: 3.1.13
-  resolution: "jquery-mousewheel@npm:3.1.13"
-  checksum: 10c0/acd57dfe7d2268ddddb906cfca6316fb364aeb74dc4d15379baa60c88b5fd3cc0aa7830e09cb6e702a4de9306e467519f147396e49f2f9c9f2c7118537721fab
+  version: 3.2.2
+  resolution: "jquery-mousewheel@npm:3.2.2"
+  dependencies:
+    jquery: "npm:>=1.2.6"
+  checksum: 10c0/a8b45ae7759ce14134284cb6a2f2446f16d43325550c2e25653de572ca3e197b471b8322afb11ec114ab3b0f26b7072a7b47de7ed6617e9417328a94eac30740
   languageName: node
   linkType: hard
 
@@ -327,7 +329,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jquery@npm:>=1.10, jquery@npm:>=1.5.0 <4.0, jquery@npm:>=1.7, jquery@npm:>=1.7.2, jquery@npm:>=3.4.0 <4.0.0, jquery@npm:^3.6.0, jquery@npm:~3.7.1":
+"jquery@npm:>=1.10, jquery@npm:>=1.2.6, jquery@npm:>=1.5.0 <4.0, jquery@npm:>=1.7, jquery@npm:>=1.7.2, jquery@npm:>=3.4.0 <4.0.0, jquery@npm:^3.6.0, jquery@npm:~3.7.1":
   version: 3.7.1
   resolution: "jquery@npm:3.7.1"
   checksum: 10c0/808cfbfb758438560224bf26e17fcd5afc7419170230c810dd11f5c1792e2263e2970cca8d659eb84fcd9acc301edb6d310096e450277d54be4f57071b0c82d9

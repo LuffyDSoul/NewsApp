@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NewsApp.Themes;
+using NewsApp.ReadingLists;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
 using Volo.Abp.Data;
@@ -59,6 +60,8 @@ public class NewsAppDbContext :
     #region Entidades de dominio
 
     public DbSet<Theme> Themes { get; set; }
+    public DbSet<ReadingList> ReadingLists { get; set; }
+    public DbSet<SavedArticle> SavedArticles { get; set; }
 
     #endregion
 
@@ -98,6 +101,60 @@ public class NewsAppDbContext :
             b.ToTable(NewsAppConsts.DbTablePrefix + "Themes", NewsAppConsts.DbSchema);
             b.ConfigureByConvention();
             b.Property(x => x.Name).IsRequired().HasMaxLength(128);            
+        });
+
+        // Reading Lists
+        builder.Entity<ReadingList>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "ReadingLists", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            
+            b.Property(x => x.Name).IsRequired().HasMaxLength(256);
+            b.Property(x => x.Description).HasMaxLength(1024);
+            b.Property(x => x.Color).HasMaxLength(50);
+            
+            // Relationship with User
+            b.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Index for user queries
+            b.HasIndex(x => x.UserId);
+            b.HasIndex(x => new { x.UserId, x.Name }).IsUnique();
+        });
+
+        // Saved Articles
+        builder.Entity<SavedArticle>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "SavedArticles", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            
+            b.Property(x => x.Source).HasMaxLength(256);
+            b.Property(x => x.Title).IsRequired().HasMaxLength(512);
+            b.Property(x => x.Description).HasMaxLength(1024);
+            b.Property(x => x.Url).IsRequired().HasMaxLength(2048);
+            b.Property(x => x.UrlToImage).HasMaxLength(2048);
+            b.Property(x => x.LanguageCode).HasMaxLength(5);
+            b.Property(x => x.Author).HasMaxLength(256);
+            b.Property(x => x.Tags).HasMaxLength(1024);
+            
+            // Relationship with User
+            b.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Relationship with ReadingList
+            b.HasOne(x => x.ReadingList)
+                .WithMany(x => x.SavedArticles)
+                .HasForeignKey(x => x.ReadingListId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Indexes for performance
+            b.HasIndex(x => x.UserId);
+            b.HasIndex(x => x.ReadingListId);
+            b.HasIndex(x => new { x.UserId, x.Url }).IsUnique();
         });
     }
 }

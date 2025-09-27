@@ -1,0 +1,6 @@
+@echo off
+echo Testing Backend NewsApp API...
+echo.
+echo Starting .NET Backend...
+cd "src\NewsApp.HttpApi.Host"
+dotnet run
