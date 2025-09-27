@@ -16,6 +16,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)
   },
   {
+    path: 'profile',
+    loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
+    canActivate: [AuthGuard]  // Proteger ruta de perfil
+  },
+  {
     path: 'news',
     loadComponent: () => import('./features/news/news-list/news-list.component').then(m => m.NewsListComponent),
     canActivate: [AuthGuard]  // Proteger ruta de noticias

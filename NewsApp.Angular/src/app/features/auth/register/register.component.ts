@@ -383,7 +383,7 @@ export class RegisterComponent implements OnInit {
     this.loading = true;
 
     this.authService.register(this.userData).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.loading = false;
         this.successMessage = 'Account created successfully! You can now sign in with your credentials.';
         
@@ -400,7 +400,7 @@ export class RegisterComponent implements OnInit {
           });
         }, 2000);
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Registration error:', error);
         this.loading = false;
         

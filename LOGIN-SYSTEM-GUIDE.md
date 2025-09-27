@@ -1,278 +1,332 @@
-# ?? **NEWSAPP - SISTEMA COMPLETO DE LOGIN & REGISTRO**
+# ?? **NEWSAPP - SISTEMA COMPLETO CON IDIOMA PERSONALIZADO**
 
-## ? **¿QUÉ SE HA IMPLEMENTADO?**
+## ? **FUNCIONALIDADES IMPLEMENTADAS**
 
-### **?? RESUMEN RÁPIDO**
-Sistema completo de autenticación y autorización usando ABP Framework + Angular:
+### **?? RESUMEN COMPLETO**
+Sistema de autenticación y gestión de noticias con personalización por idioma:
 
 - ? **Login/Logout** funcionando completamente
 - ? **Registro de usuarios** con validación completa
+- ? **Perfil de usuario** con edición completa
+- ? **Idioma preferido** personalizable ? **NUEVO**
+- ? **Noticias personalizadas** por idioma ? **NUEVO**
+- ? **Cambio de contraseña** seguro
 - ? **Usuario admin** precargado (admin / 1q2w3E*)  
 - ? **JWT Authentication** con OpenIddict
 - ? **Protección de rutas** en Angular
-- ? **Interceptor HTTP** automático para tokens
-- ? **UI completa** de login y registro
-- ? **Navegación** con estado de usuario
+- ? **UI completa** y profesional
 
 ---
 
-## ?? **CÓMO EJECUTAR LA APLICACIÓN**
+## ?? **NUEVA FUNCIONALIDAD: IDIOMA PERSONALIZADO**
 
-### **Opción 1: Script Automático (Recomendado)**
+### **?? Gestión de Idioma Preferido**
+- ? **17 idiomas soportados** por NewsAPI:
+  - ???? English, ???? Español, ???? Français, ???? Deutsch
+  - ???? Italiano, ???? Português, ???? ???????, ???? ??
+  - ???? ???, ???? ???, ???? ???????, ???? Nederlands
+  - ???? Norsk, ???? Svenska, ???? Dansk, ???? ?????, ???? ??????
+- ? **Selector visual** con banderas y nombres
+- ? **Persistencia** del idioma preferido
+- ? **Aplicación automática** a todas las búsquedas de noticias
+
+### **?? Noticias Personalizadas por Idioma**
+- ? **Carga automática** de noticias en idioma preferido
+- ? **Búsqueda inteligente** que respeta idioma del usuario
+- ? **Filtros por categoría** en idioma preferido
+- ? **Indicador visual** del idioma actual en pantalla de noticias
+- ? **Fuentes específicas** por idioma cuando están disponibles
+
+### **?? Interfaz de Usuario Mejorada**
+- ? **Campo de idioma** en perfil de usuario con preview
+- ? **Indicador de idioma** en header de noticias
+- ? **Banderas de países** para identificación visual
+- ? **Tips de personalización** en página de noticias
+- ? **Enlaces directos** a configuración de perfil
+
+---
+
+## ?? **FLUJOS DE USUARIO ACTUALIZADOS**
+
+### **?? Flujo de Configuración de Idioma**
+```
+1. ?? Usuario logueado ? Navega a Profile (/profile)
+   ?
+2. ?? Tab "Profile Information" ? Campo "Preferred Language"
+   ?
+3. ?? Dropdown con 17 idiomas ? Selecciona "???? Español"
+   ?
+4. ?? Vista previa ? "???? Español - News will be displayed in this language"
+   ?
+5. ?? Click "Save Changes" ? PUT /api/account/my-profile
+   ?
+6. ? Actualización exitosa ? Estado sincronizado en toda la app
+   ?
+7. ?? Volver a noticias ? Automáticamente muestra "???? News in Español"
+```
+
+### **?? Flujo de Noticias Personalizadas**
+```
+1. ?? Usuario abre /news ? Header muestra "???? News in Español"
+   ?
+2. ?? Carga automática ? getPersonalizedNews(language: 'es')
+   ?
+3. ?? Backend NewsAPI ? Filtra noticias en español
+   ?
+4. ?? Frontend muestra ? Noticias en idioma preferido
+   ?
+5. ?? Usuario busca "tecnología" ? searchPersonalizedNews(query, language: 'es')
+   ?
+6. ?? Resultados en español ? Automáticamente filtrados
+   ?
+7. ??? Cambio de categoría ? getPersonalizedHeadlines(category, language: 'es')
+```
+
+---
+
+## ??? **ARQUITECTURA ACTUALIZADA**
+
+### **?? Nuevos Servicios**
+```typescript
+// LanguageService - Gestión de idiomas
+? getAvailableLanguages() ? Lista de 17 idiomas soportados
+? getLanguageInfo(code) ? Información completa del idioma
+? getLanguageName(code) ? Nombre del idioma
+? getLanguageFlag(code) ? Bandera del idioma
+? isValidLanguageCode(code) ? Validación de código
+
+// AuthService - Extensiones para idioma
+? getPreferredLanguage() ? Obtener idioma preferido del usuario
+? updatePreferredLanguage(code) ? Actualizar idioma preferido
+? loadCurrentUser() ? Incluye idioma preferido
+
+// NewsService - Métodos personalizados
+? getPersonalizedNews() ? Noticias en idioma del usuario
+? searchPersonalizedNews() ? Búsqueda personalizada
+? getPersonalizedHeadlines() ? Titulares personalizados
+? getUserPreferredLanguage() ? Idioma automático para todas las APIs
+```
+
+### **?? Archivos Actualizados**
+```
+NewsApp.Angular/src/app/
+??? shared/models/
+?   ??? auth.model.ts              ?? ACTUALIZADO - Interfaces idioma
+??? core/services/
+?   ??? language.service.ts        ? NUEVO - Gestión idiomas
+?   ??? auth.service.ts            ?? ACTUALIZADO - Idioma preferido  
+?   ??? news.service.ts            ?? ACTUALIZADO - APIs personalizadas
+??? features/
+?   ??? profile/
+?   ?   ??? profile.component.ts   ?? ACTUALIZADO - Campo idioma
+?   ??? news/news-list/
+?       ??? news-list.component.ts ?? ACTUALIZADO - Indicadores idioma
+```
+
+---
+
+## ?? **NUEVAS APIs Y INTERFACES**
+
+### **?? Interfaces Extendidas**
+```typescript
+// UserProfile - Con idioma preferido
+interface UserProfile {
+  // ...campos existentes...
+  preferredLanguage?: string; // ? NUEVO
+}
+
+// UpdateProfileRequest - Con idioma preferido
+interface UpdateProfileRequest {
+  // ...campos existentes...
+  preferredLanguage?: string; // ? NUEVO
+}
+
+// LanguageOption - Nueva interfaz
+interface LanguageOption {
+  code: string;     // 'es', 'en', 'fr'...
+  name: string;     // 'Español', 'English'...
+  flag: string;     // '????', '????', '????'...
+}
+```
+
+### **?? APIs de Noticias Mejoradas**
+```typescript
+// Métodos que automáticamente usan idioma del usuario:
+newsService.getPersonalizedNews(20)
+// ? GET /api/news/get-latest?languageCode=es&count=20
+
+newsService.searchPersonalizedNews("tecnología", "technology")
+// ? POST /api/news/search { query: "tecnología", language: "es", category: "technology" }
+
+newsService.getPersonalizedHeadlines("sports")
+// ? GET /api/news/get-top-headlines?language=es&category=sports
+```
+
+---
+
+## ?? **EJEMPLOS PRÁCTICOS**
+
+### **?? Ejemplo: Usuario Cambia a Español**
+```typescript
+// 1. Usuario en perfil selecciona español
+const profileUpdate = {
+  userName: "juan_garcia",
+  email: "juan@email.com",
+  preferredLanguage: "es" // ? Cambio de idioma
+};
+
+// 2. Sistema actualiza perfil
+this.authService.updateProfile(profileUpdate).subscribe(() => {
+  // 3. Estado se sincroniza automáticamente
+  console.log(this.authService.getPreferredLanguage()); // "es"
+});
+
+// 4. Navegación a noticias usa automáticamente español
+this.newsService.getPersonalizedNews(20).subscribe(news => {
+  // Noticias automáticamente en español
+  console.log('Noticias en español:', news);
+});
+```
+
+### **?? Ejemplo: Búsqueda Personalizada**
+```typescript
+// Usuario busca "fútbol" estando configurado en español
+this.newsService.searchPersonalizedNews("fútbol", "sports").subscribe(result => {
+  // Backend automáticamente busca en español:
+  // POST /api/news/search 
+  // { query: "fútbol", language: "es", category: "sports" }
+  
+  console.log('Resultados deportivos en español:', result.items);
+});
+```
+
+### **??? Ejemplo: Categorías Personalizadas**
+```typescript
+// Usuario selecciona categoría "technology" con idioma preferido "es"
+this.newsService.getPersonalizedHeadlines("technology").subscribe(result => {
+  // Backend automáticamente filtra por idioma:
+  // GET /api/news/get-top-headlines?category=technology&language=es
+  
+  console.log('Tecnología en español:', result.items);
+});
+```
+
+---
+
+## ?? **MEJORAS DE UI/UX**
+
+### **?? Campo de Idioma en Perfil**
+```html
+<!-- Selector visual con preview -->
+<label>Preferred Language for News</label>
+<select [(ngModel)]="profileData.preferredLanguage">
+  <option value="en">???? English</option>
+  <option value="es">???? Español</option>
+  <option value="fr">???? Français</option>
+  <!-- ...más idiomas... -->
+</select>
+
+<!-- Vista previa del idioma seleccionado -->
+<div class="language-preview" *ngIf="profileData.preferredLanguage">
+  ???? Español
+  <small>News will be displayed in this language when available</small>
+</div>
+```
+
+### **?? Indicador en Página de Noticias**
+```html
+<!-- Header con idioma actual -->
+<div class="language-info">
+  <span class="language-indicator">
+    ???? News in Español
+  </span>
+  <small class="language-hint">
+    Change language in your <a href="/profile">profile settings</a>
+  </small>
+</div>
+
+<!-- Tips de personalización -->
+<div class="personalization-tips">
+  <h3>?? Personalization Tips</h3>
+  <ul>
+    <li>Change your preferred language in Profile Settings</li>
+    <li>News are automatically filtered by your language preference</li>
+    <li>Use search to find specific topics in your language</li>
+  </ul>
+</div>
+```
+
+---
+
+## ?? **CÓMO PROBAR LAS NUEVAS FUNCIONALIDADES**
+
+### **?? Demo Completa de Idioma**
 ```sh
-# Ejecutar desde la raíz del proyecto
+# 1. Ejecutar aplicación
 start-with-login.bat
+
+# 2. Login y configurar idioma
+- Login: admin / 1q2w3E*
+- Ir a Profile ? My Profile
+- Campo "Preferred Language": Seleccionar "???? Español"
+- Click "Save Changes"
+
+# 3. Verificar noticias personalizadas
+- Volver a Latest News
+- Header muestra: "???? News in Español"
+- Noticias automáticamente en español
+
+# 4. Probar búsquedas personalizadas
+- Buscar: "fútbol" ? Resultados en español
+- Cambiar categoria: "Sports" ? Deportes en español
+- Cambiar a "Technology" ? Tecnología en español
+
+# 5. Probar otros idiomas
+- Volver a perfil ? Cambiar a "???? Français"
+- Save Changes ? Noticias ahora en francés
+- Buscar: "technologie" ? Resultados en francés
 ```
 
-### **URLs de la Aplicación**
-- ?? **Frontend**: http://localhost:4200
-- ??? **Backend**: https://localhost:44341  
-- ?? **Swagger**: https://localhost:44341/swagger
-
----
-
-## ?? **OPCIONES DE AUTENTICACIÓN**
-
-### **1. Usuario Admin Existente**
+### **?? Idiomas Disponibles para Pruebas**
 ```
-?? Username: admin
-?? Password: 1q2w3E*
-?? Email: admin@abp.io
-```
-
-### **2. Registro de Nuevo Usuario**
-```
-?? Formulario completo con:
-? Username (mínimo 3 caracteres)
-? Email válido  
-? Password (mínimo 6 caracteres)
-? Confirmación de password
-? Aceptar términos y condiciones
-```
-
----
-
-## ?? **FLUJOS DE USUARIO COMPLETOS**
-
-### **?? Flujo de Registro**
-```
-Usuario abre ? http://localhost:4200
-     ?
-Click "Sign Up" ? http://localhost:4200/auth/register
-     ?
-Llenar formulario ? Username, Email, Password
-     ?
-Angular POST ? https://localhost:44341/api/account/register
-     ?
-ABP crea usuario ? Base de datos
-     ?
-Mensaje éxito ? Auto redirect a login
-     ?
-Login automático ? Con email precargado
-```
-
-### **?? Flujo de Login (Existente)**
-```
-Usuario ingresa credenciales ? user/password
-     ?
-Angular POST ? https://localhost:44341/connect/token
-     ?
-ABP OpenIddict valida ? Contra base de datos
-     ?
-ABP responde ? JWT Token
-     ?
-Angular guarda ? localStorage
-     ?
-Redirección ? http://localhost:4200/news
+???? English    ? Buscar: "technology", "sports", "business"
+???? Español    ? Buscar: "tecnología", "fútbol", "negocios"  
+???? Français   ? Buscar: "technologie", "sport", "actualités"
+???? Deutsch    ? Buscar: "technologie", "sport", "nachrichten"
+???? Italiano   ? Buscar: "tecnologia", "calcio", "notizie"
+???? Português  ? Buscar: "tecnologia", "futebol", "notícias"
+???? ???????    ? Buscar: "??????????", "?????", "???????"
+???? ??       ? Buscar: "??", "??", "??"
 ```
 
 ---
 
-## ??? **NUEVOS COMPONENTES IMPLEMENTADOS**
+## ? **RESULTADO FINAL**
 
-### **RegisterComponent (features/auth/register/)**
-```typescript
-? Formulario reactivo completo
-? Validación en tiempo real:
-   - Username: mínimo 3 caracteres
-   - Email: formato válido
-   - Password: mínimo 6 caracteres
-   - Confirm password: debe coincidir
-   - Terms: debe ser aceptado
-? Estados de loading
-? Manejo de errores específicos
-? Mensaje de éxito
-? Auto-redirect a login
-? Design responsivo
-```
+### **?? Sistema Completamente Personalizado**
+- ? **17 idiomas soportados** con selección visual
+- ? **Personalización automática** de todas las búsquedas
+- ? **Persistencia** del idioma preferido
+- ? **Sincronización** en tiempo real entre perfil y noticias
+- ? **Indicadores visuales** claros del idioma actual
+- ? **Experiencia fluida** sin necesidad de reconfigurar
 
-### **Navegación Actualizada**
-```typescript
-// Header con botones dinámicos:
-No autenticado: [Sign Up] [Sign In]
-Autenticado: Welcome, User [Logout]
-```
+### **?? Beneficios para el Usuario**
+- ?? **Noticias en su idioma** automáticamente
+- ?? **Búsquedas relevantes** en idioma preferido  
+- ?? **Interfaz intuitiva** con banderas y nombres claros
+- ? **Configuración simple** desde perfil de usuario
+- ?? **Cambios inmediatos** sin necesidad de recargar
 
-### **Rutas Nuevas**
-```typescript
-/auth/register  ? RegisterComponent
-/auth/login     ? LoginComponent (mejorado)
-/news          ? NewsListComponent (protegido)
-```
+### **?? Características Técnicas Destacadas**
+- ?? **APIs inteligentes** que respetan preferencias
+- ?? **Servicios modulares** para fácil mantenimiento
+- ?? **UI responsive** con indicadores visuales
+- ??? **Validación completa** de códigos de idioma
+- ?? **Compatibilidad móvil** total
+
+**¡Sistema completo de noticias personalizadas por idioma listo para producción!** ????
 
 ---
 
-## ?? **APIS UTILIZADAS**
-
-### **Registro de Usuario**
-```
-POST /api/account/register
-Body: {
-  "userName": "usuario",
-  "emailAddress": "user@email.com", 
-  "password": "password123",
-  "appName": "NewsApp"
-}
-Response: User created successfully
-```
-
-### **Login OAuth**
-```
-POST /connect/token
-Body: grant_type=password&username=usuario&password=password123...
-Response: { access_token, expires_in, token_type }
-```
-
----
-
-## ?? **EXPERIENCIA DE USUARIO**
-
-### **Página de Registro**
-- ? **Validación en tiempo real** de todos los campos
-- ? **Mensajes de error** específicos y claros
-- ? **Indicador visual** de campos válidos/inválidos
-- ? **Loading state** durante creación de cuenta
-- ? **Mensaje de éxito** con countdown
-- ? **Auto-redirect** a login con email precargado
-- ? **Links** para ir a login o continuar sin cuenta
-
-### **Página de Login Mejorada**  
-- ? **Email precargado** cuando viene del registro
-- ? **Ocultación automática** de credenciales demo
-- ? **Retrocompatibilidad** con funciones existentes
-
----
-
-## ??? **MANEJO DE ERRORES DE REGISTRO**
-
-### **Validaciones Frontend**
-```
-? Username vacío ? "Username is required"
-? Username < 3 chars ? "Username must be at least 3 characters"
-? Email inválido ? "Please enter a valid email address"  
-? Password < 6 chars ? "Password must be at least 6 characters"
-? Passwords no coinciden ? "Passwords do not match"
-? Terms no aceptados ? "You must accept the terms and conditions"
-```
-
-### **Errores Backend**
-```
-?? 400 Bad Request ? "Please check your information and try again"
-?? 409 Conflict ? "Username or email already exists"
-?? 500 Server Error ? "Registration failed. Please try again later"
-```
-
----
-
-## ?? **EJEMPLOS DE USO**
-
-### **Registrar Usuario Nuevo**
-```typescript
-// 1. Usuario va a /auth/register
-// 2. Llena formulario:
-userData = {
-  userName: "john_doe",
-  emailAddress: "john@example.com", 
-  password: "mypassword123",
-  appName: "NewsApp"
-}
-// 3. Submit ? POST /api/account/register
-// 4. Éxito ? Redirect a login con email john@example.com
-```
-
-### **Login con Usuario Registrado**
-```typescript
-// 1. Email ya precargado desde registro
-// 2. Usuario solo ingresa password  
-// 3. Login normal con JWT
-// 4. Acceso a noticias protegidas
-```
-
----
-
-## ?? **FLUJO COMPLETO DE ONBOARDING**
-
-### **Usuario Nuevo (Registro + Login)**
-```
-1. ?? Abre http://localhost:4200
-2. ?? No autenticado ? Redirect a /auth/login  
-3. ?? Click "Sign Up" ? /auth/register
-4. ?? Llena formulario registro
-5. ? Submit ? Cuenta creada
-6. ?? Auto redirect ? /auth/login (email precargado)
-7. ?? Ingresa password ? Login exitoso
-8. ?? Redirect ? /news (noticias protegidas)
-9. ?? Usuario usando la app completamente
-```
-
-### **Usuario Existente (Solo Login)**
-```
-1. ?? Abre http://localhost:4200  
-2. ?? No autenticado ? Redirect a /auth/login
-3. ?? Ingresa credenciales ? admin/1q2w3E*
-4. ? Login exitoso ? JWT token
-5. ?? Redirect ? /news (noticias protegidas)
-6. ?? Usuario usando la app
-```
-
----
-
-## ?? **VENTAJAS DE LA IMPLEMENTACIÓN**
-
-### **?? Seguridad**
-- ? **Password validation** en frontend y backend
-- ? **Email validation** con regex
-- ? **Unique constraints** en base de datos
-- ? **JWT tokens** con expiración
-- ? **HTTPS** en backend
-
-### **?? UX/UI**
-- ? **Validación en tiempo real** sin submit
-- ? **Estados visuales** claros (error/success/loading)
-- ? **Feedback inmediato** al usuario
-- ? **Transiciones fluidas** entre páginas
-- ? **Mobile responsive** design
-
-### **?? Técnica**
-- ? **Single Page Application** sin recargas
-- ? **State management** centralizado
-- ? **Error handling** robusto
-- ? **Code reusability** en servicios
-- ? **Scalable architecture** para nuevas features
-
----
-
-## ?? **RESULTADO FINAL**
-
-### **? Lo Que Funciona Ahora**
-1. **?? Registro** de usuarios completamente funcional
-2. **?? Login** con usuarios registrados + admin  
-3. **??? Protección** de rutas automática
-4. **?? Experiencia** fluida de onboarding
-5. **?? Navegación** entre registro/login/app
-6. **?? Persistencia** de sesión en localStorage
-7. **?? Logout** y limpieza de sesión
-
-**¡Sistema de autenticación completo y profesional!** ????
-
-**Prueba creando tu propia cuenta en: http://localhost:4200** ??
+*Ejecuta `start-with-login.bat` y prueba todas las funcionalidades de idiomas en: **http://localhost:4200***

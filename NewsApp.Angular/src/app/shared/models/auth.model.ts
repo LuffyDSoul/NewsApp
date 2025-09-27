@@ -19,6 +19,7 @@ export interface RegisterRequest {
   appName: string;
 }
 
+// ✅ ACTUALIZADO: Coincide exactamente con UserProfileDto del backend
 export interface UserProfile {
   id?: string;
   userName: string;
@@ -27,6 +28,7 @@ export interface UserProfile {
   surname?: string;
   emailConfirmed: boolean;
   phoneNumber?: string;
+  preferredLanguage?: string; // ✅ Campo de idioma preferido
 }
 
 export interface CurrentUser {
@@ -37,6 +39,7 @@ export interface CurrentUser {
   name?: string;
   surname?: string;
   roles: string[];
+  preferredLanguage?: string; // ✅ Campo de idioma preferido
 }
 
 export interface TokenInfo {
@@ -45,4 +48,32 @@ export interface TokenInfo {
   token_type: string;
   refresh_token?: string;
   expires_at: number;
+}
+
+// ✅ ACTUALIZADO: Coincide exactamente con UpdateUserProfileDto del backend
+export interface UpdateProfileRequest {
+  userName: string;
+  email: string;
+  name?: string;
+  surname?: string;
+  phoneNumber?: string;
+  preferredLanguage?: string; // ✅ Campo de idioma preferido
+}
+
+// ✅ ACTUALIZADO: Coincide exactamente con ChangePasswordDto del backend
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ProfileUpdateResponse {
+  success: boolean;
+  message?: string;
+}
+
+// ✅ NUEVO: Interfaz para idiomas disponibles
+export interface LanguageOption {
+  code: string;
+  name: string;
+  flag: string;
 }

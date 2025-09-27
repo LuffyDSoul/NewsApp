@@ -17,10 +17,11 @@ import { CurrentUser } from './shared/models/auth.model';
         
         <nav class="header-nav">
           <a routerLink="/news" routerLinkActive="active" *ngIf="currentUser.isAuthenticated">Latest News</a>
+          <a routerLink="/profile" routerLinkActive="active" *ngIf="currentUser.isAuthenticated">My Profile</a>
         </nav>
 
         <div class="header-user" *ngIf="currentUser.isAuthenticated; else loginSection">
-          <div class="user-info">
+          <div class="user-info" (click)="goToProfile()">
             <span class="welcome-text">Welcome, </span>
             <span class="username">{{ currentUser.userName || currentUser.email }}</span>
           </div>
@@ -107,6 +108,14 @@ import { CurrentUser } from './shared/models/auth.model';
       flex-direction: column;
       align-items: flex-end;
       font-size: 0.9em;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+      padding: 5px 10px;
+      border-radius: 6px;
+    }
+
+    .user-info:hover {
+      background: rgba(255, 255, 255, 0.1);
     }
 
     .welcome-text {
@@ -204,7 +213,7 @@ export class App implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.authService.currentUser$.subscribe(user => {
+    this.authService.currentUser$.subscribe((user: CurrentUser) => {
       this.currentUser = user;
     });
   }
@@ -215,6 +224,10 @@ export class App implements OnInit {
     } else {
       this.router.navigate(['/auth/login']);
     }
+  }
+
+  goToProfile(): void {
+    this.router.navigate(['/profile']);
   }
 
   logout(): void {

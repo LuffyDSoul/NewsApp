@@ -39,6 +39,17 @@ public static class NewsAppEfCoreEntityExtensionMappings
                  * See the documentation for more:
                  * https://docs.abp.io/en/abp/latest/Customizing-Application-Modules-Extending-Entities
                  */
+
+                // ✅ NUEVO: Mapeo EF Core para PreferredLanguage
+                ObjectExtensionManager.Instance
+                    .MapEfCoreProperty<IdentityUser, string>(
+                        "PreferredLanguage",
+                        (entityBuilder, propertyBuilder) =>
+                        {
+                            propertyBuilder.HasMaxLength(10); // máximo 10 caracteres para código de idioma
+                            propertyBuilder.HasDefaultValue("en"); // valor por defecto: inglés
+                        }
+                    );
         });
     }
 }

@@ -69,5 +69,28 @@ public static class NewsAppModuleExtensionConfigurator
          * See the documentation for more:
          * https://docs.abp.io/en/abp/latest/Module-Entity-Extensions
          */
+
+        // ✅ NUEVO: Configuración de idioma preferido para usuarios
+        ObjectExtensionManager.Instance.Modules()
+            .ConfigureIdentity(identity =>
+            {
+                identity.ConfigureUser(user =>
+                {
+                    user.AddOrUpdateProperty<string>( // tipo: string
+                        "PreferredLanguage", // nombre de la propiedad
+                        property =>
+                        {
+                            // validaciones
+                            property.Attributes.Add(new StringLengthAttribute(10) { MinimumLength = 2 });
+                            
+                            // permitir que el usuario pueda editar esta propiedad
+                            property.Configuration[IdentityModuleExtensionConsts.ConfigurationNames.AllowUserToEdit] = true;
+                            
+                            // configuraciones adicionales
+                            property.DefaultValue = "en"; // valor por defecto: inglés
+                        }
+                    );
+                });
+            });
     }
 }

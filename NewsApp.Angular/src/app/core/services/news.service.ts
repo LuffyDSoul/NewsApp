@@ -4,6 +4,7 @@ import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { NewsArticleDto, NewsSearchDto, PagedResultDto, NewsSourceDto } from '../../shared/models/news.model';
+import { AuthService } from './auth.service'; // ✅ NUEVO: Import AuthService
 
 @Injectable({
   providedIn: 'root'
@@ -11,24 +12,40 @@ import { NewsArticleDto, NewsSearchDto, PagedResultDto, NewsSourceDto } from '..
 export class NewsService {
   private readonly baseUrl = `${environment.apiUrl}/news`;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService // ✅ NUEVO: Inyectar AuthService
+  ) {}
 
-  // Búsqueda de noticias
+  // ✅ NUEVO: Obtener idioma preferido del usuario
+  private getUserPreferredLanguage(): string {
+    return this.authService.getPreferredLanguage();
+  }
+
+  // Búsqueda de noticias (ahora usa idioma preferido)
   searchNews(searchDto: NewsSearchDto): Observable<PagedResultDto<NewsArticleDto>> {
+    // Si no se especifica idioma, usar el preferido del usuario
+    if (!searchDto.language) {
+      searchDto.language = this.getUserPreferredLanguage();
+    }
+    
     return this.http.post<PagedResultDto<NewsArticleDto>>(`${this.baseUrl}/search`, searchDto)
       .pipe(catchError(this.handleError<PagedResultDto<NewsArticleDto>>('searchNews', { totalCount: 0, items: [] })));
   }
 
-  // Obtener titulares principales
+  // Obtener titulares principales (ahora usa idioma preferido por defecto)
   getTopHeadlines(
     category?: string,
     country?: string,
-    language: string = 'en',
+    language?: string, // ✅ MODIFICADO: Ahora es opcional
     page: number = 1,
     pageSize: number = 20
   ): Observable<PagedResultDto<NewsArticleDto>> {
+    // Si no se especifica idioma, usar el preferido del usuario
+    const userLanguage = language || this.getUserPreferredLanguage();
+    
     let params = new HttpParams()
-      .set('language', language)
+      .set('language', userLanguage)
       .set('page', page.toString())
       .set('pageSize', pageSize.toString());
 
@@ -39,35 +56,44 @@ export class NewsService {
       .pipe(catchError(this.handleError<PagedResultDto<NewsArticleDto>>('getTopHeadlines', { totalCount: 0, items: [] })));
   }
 
-  // Obtener noticias más recientes
+  // Obtener noticias más recientes (ahora usa idioma preferido por defecto)
   getLatestNews(count: number = 10, languageCode?: string): Observable<NewsArticleDto[]> {
-    let params = new HttpParams().set('count', count.toString());
-    if (languageCode) params = params.set('languageCode', languageCode);
+    // Si no se especifica idioma, usar el preferido del usuario
+    const userLanguage = languageCode || this.getUserPreferredLanguage();
+    
+    let params = new HttpParams()
+      .set('count', count.toString())
+      .set('languageCode', userLanguage);
 
     return this.http.get<NewsArticleDto[]>(`${this.baseUrl}/get-latest`, { params })
       .pipe(catchError(this.handleError<NewsArticleDto[]>('getLatestNews', [])));
   }
 
-  // Obtener fuentes de noticias
+  // Obtener fuentes de noticias (ahora usa idioma preferido por defecto)
   getSources(language?: string, country?: string): Observable<NewsSourceDto[]> {
-    let params = new HttpParams();
-    if (language) params = params.set('language', language);
+    // Si no se especifica idioma, usar el preferido del usuario
+    const userLanguage = language || this.getUserPreferredLanguage();
+    
+    let params = new HttpParams().set('language', userLanguage);
     if (country) params = params.set('country', country);
 
     return this.http.get<NewsSourceDto[]>(`${this.baseUrl}/get-sources`, { params })
       .pipe(catchError(this.handleError<NewsSourceDto[]>('getSources', [])));
   }
 
-  // Obtener noticias de fuentes específicas
+  // Obtener noticias de fuentes específicas (ahora usa idioma preferido por defecto)
   getNewsFromSources(
     sources: string,
-    language: string = 'en',
+    language?: string, // ✅ MODIFICADO: Ahora es opcional
     page: number = 1,
     pageSize: number = 20
   ): Observable<PagedResultDto<NewsArticleDto>> {
+    // Si no se especifica idioma, usar el preferido del usuario
+    const userLanguage = language || this.getUserPreferredLanguage();
+    
     const params = new HttpParams()
       .set('sources', sources)
-      .set('language', language)
+      .set('language', userLanguage)
       .set('page', page.toString())
       .set('pageSize', pageSize.toString());
 
@@ -75,22 +101,51 @@ export class NewsService {
       .pipe(catchError(this.handleError<PagedResultDto<NewsArticleDto>>('getNewsFromSources', { totalCount: 0, items: [] })));
   }
 
-  // Buscar noticias localmente
+  // Buscar noticias localmente (ahora usa idioma preferido por defecto)
   searchLocalNews(
     searchText: string,
     languageCode?: string,
     skipCount: number = 0,
     maxResultCount: number = 10
   ): Observable<PagedResultDto<NewsArticleDto>> {
+    // Si no se especifica idioma, usar el preferido del usuario
+    const userLanguage = languageCode || this.getUserPreferredLanguage();
+    
     let params = new HttpParams()
       .set('searchText', searchText)
+      .set('languageCode', userLanguage)
       .set('skipCount', skipCount.toString())
       .set('maxResultCount', maxResultCount.toString());
 
-    if (languageCode) params = params.set('languageCode', languageCode);
-
     return this.http.get<PagedResultDto<NewsArticleDto>>(`${this.baseUrl}/search-local`, { params })
       .pipe(catchError(this.handleError<PagedResultDto<NewsArticleDto>>('searchLocalNews', { totalCount: 0, items: [] })));
+  }
+
+  // ✅ NUEVOS MÉTODOS: Métodos específicos con idioma del usuario
+  
+  // Obtener noticias en el idioma preferido del usuario
+  getPersonalizedNews(count: number = 20): Observable<NewsArticleDto[]> {
+    const userLanguage = this.getUserPreferredLanguage();
+    return this.getLatestNews(count, userLanguage);
+  }
+
+  // Buscar noticias personalizadas
+  searchPersonalizedNews(query: string, category?: string): Observable<PagedResultDto<NewsArticleDto>> {
+    const userLanguage = this.getUserPreferredLanguage();
+    
+    const searchDto: NewsSearchDto = {
+      query,
+      category,
+      language: userLanguage
+    };
+    
+    return this.searchNews(searchDto);
+  }
+
+  // Obtener titulares personalizados
+  getPersonalizedHeadlines(category?: string, country?: string): Observable<PagedResultDto<NewsArticleDto>> {
+    const userLanguage = this.getUserPreferredLanguage();
+    return this.getTopHeadlines(category, country, userLanguage);
   }
 
   // Probar conexión

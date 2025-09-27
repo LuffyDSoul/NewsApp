@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { LoginRequest } from '../../../shared/models/auth.model';
+import { LoginRequest, CurrentUser } from '../../../shared/models/auth.model'; // ✅ Agregando CurrentUser import
 import { filter, take } from 'rxjs/operators';
 
 @Component({
@@ -343,7 +343,7 @@ export class LoginComponent implements OnInit {
     this.loading = true;
 
     this.authService.login(this.credentials).subscribe({
-      next: (success) => {
+      next: (success: boolean) => {
         this.loading = false;
         if (success) {
           // Force a small delay to ensure state synchronization
@@ -354,7 +354,7 @@ export class LoginComponent implements OnInit {
             } else {
               // If still not authenticated, wait for the state to update
               this.authService.currentUser$.pipe(
-                filter(user => user.isAuthenticated),
+                filter((user: CurrentUser) => user.isAuthenticated),
                 take(1)
               ).subscribe(() => {
                 this.router.navigate([this.returnUrl]);
@@ -365,7 +365,7 @@ export class LoginComponent implements OnInit {
           this.errorMessage = 'Invalid username/email or password';
         }
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Login error:', error);
         this.errorMessage = 'Login failed. Please check your credentials and try again.';
         this.loading = false;

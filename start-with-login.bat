@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo   NewsApp with Login & Register
+echo   NewsApp with Personalized Languages
 echo ========================================
 echo.
 
@@ -19,7 +19,7 @@ start "NewsApp Frontend" cmd /c "echo Starting frontend... && timeout /t 3 && ng
 
 echo.
 echo ========================================
-echo ? NEWSAPP WITH FULL AUTH IS STARTING!
+echo ? NEWSAPP WITH LANGUAGE PERSONALIZATION!
 echo ========================================
 echo.
 echo ?? URLs:
@@ -27,21 +27,40 @@ echo   Frontend: http://localhost:4200
 echo   Backend:  https://localhost:44341
 echo   Swagger:  https://localhost:44341/swagger
 echo.
-echo ?? Authentication Options:
-echo   1. Login with existing admin account:
-echo      Username: admin
-echo      Password: 1q2w3E*
+echo ?? Authentication:
+echo   Username: admin
+echo   Password: 1q2w3E*
 echo.
-echo   2. Register new account:
-echo      Click "Sign Up" in the app
-echo      Use any email/username/password
+echo ?? Language Features:
+echo   ? 17 supported languages with flags
+echo   ? Personalized news by language preference
+echo   ? Automatic language filtering for all searches
+echo   ? Visual language indicators throughout the app
 echo.
-echo ?? What you can do:
-echo   1. Open http://localhost:4200
-echo   2. Create new account OR sign in
-echo   3. Browse authenticated news
-echo   4. Try logout and login again
-echo   5. Test with multiple user accounts
+echo ?? Personalized News Experience:
+echo   1. Set preferred language in Profile
+echo   2. News automatically load in your language
+echo   3. Search results filtered by language
+echo   4. Category filtering respects language
+echo.
+echo ?? Try These Languages:
+echo   ???? English   ???? Español   ???? Français   ???? Deutsch
+echo   ???? Italiano  ???? Português ???? ???????   ???? ??
+echo   ???? ???    ???? ???    ???? ???????   ???? Nederlands
+echo.
+echo ?? Complete Feature Set:
+echo   ? User Registration ^& Login
+echo   ? Profile Management System  
+echo   ? Language Preference Settings
+echo   ? Personalized News Feed
+echo   ? Multilingual Search ^& Filtering
+echo   ? Responsive Modern UI
+echo.
+echo ?? Quick Test:
+echo   1. Login ? Go to Profile ? Set Language to Spanish
+echo   2. Return to News ? See "???? News in Español"
+echo   3. Search "fútbol" ? Get Spanish sports news
+echo   4. Try different languages and categories!
 echo.
 echo Press any key to close this window...
 pause >nul
