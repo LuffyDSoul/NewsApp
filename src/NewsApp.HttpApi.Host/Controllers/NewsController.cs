@@ -11,7 +11,7 @@ namespace NewsApp.Controllers
 {
     [ApiController]
     [Route("api/news")]
-    [AllowAnonymous] // Temporal para pruebas
+    [Authorize] // Ahora requiere autenticación
     public class NewsController : AbpController
     {
         private readonly INewsAppService _newsAppService;
@@ -96,6 +96,7 @@ namespace NewsApp.Controllers
         }
 
         [HttpGet("test-connection")]
+        [AllowAnonymous] // Este endpoint sigue siendo público para testing
         public async Task<bool> TestConnectionAsync()
         {
             return await _newsAppService.TestConnectionAsync();
