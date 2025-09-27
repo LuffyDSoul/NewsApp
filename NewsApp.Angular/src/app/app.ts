@@ -17,6 +17,7 @@ import { CurrentUser } from './shared/models/auth.model';
         
         <nav class="header-nav">
           <a routerLink="/news" routerLinkActive="active" *ngIf="currentUser.isAuthenticated">Latest News</a>
+          <a routerLink="/reading-lists" routerLinkActive="active" *ngIf="currentUser.isAuthenticated">Reading Lists</a>
         </nav>
 
         <div class="header-user" *ngIf="currentUser.isAuthenticated; else loginSection">

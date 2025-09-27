@@ -21,6 +21,11 @@ export const routes: Routes = [
     canActivate: [AuthGuard]  // Proteger ruta de noticias
   },
   {
+    path: 'reading-lists',
+    loadComponent: () => import('./features/reading-lists/reading-lists.component').then(m => m.ReadingListsComponent),
+    canActivate: [AuthGuard]  // Proteger ruta de listas de lectura
+  },
+  {
     path: '**',
     redirectTo: '/news'
   }

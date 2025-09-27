@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { NewsService } from '../../../core/services/news.service';
 import { NewsArticleDto } from '../../../shared/models/news.model';
 
@@ -12,6 +13,11 @@ import { NewsArticleDto } from '../../../shared/models/news.model';
     <div class="news-container">
       <div class="header-section">
         <h2>Latest News</h2>
+        
+        <!-- Future: Reading Lists Quick Access will be here -->
+        <div class="reading-lists-info" *ngIf="false">
+          <p>💡 <strong>Tip:</strong> You'll be able to save articles to reading lists once the feature is fully active!</p>
+        </div>
         
         <div class="search-section">
           <input 
@@ -63,6 +69,9 @@ import { NewsArticleDto } from '../../../shared/models/news.model';
               <a [href]="article.url" target="_blank" rel="noopener noreferrer" class="read-more">
                 Read Full Article
               </a>
+              <button class="save-btn-placeholder" title="Save functionality coming soon!" disabled>
+                💾 Save for Later
+              </button>
               <span class="author" *ngIf="article.author">By {{ article.author }}</span>
             </div>
           </div>
@@ -102,6 +111,29 @@ import { NewsArticleDto } from '../../../shared/models/news.model';
     .header-section h2 {
       color: #343a40;
       margin-bottom: 20px;
+    }
+
+    .reading-lists-info {
+      background: #e7f3ff;
+      border: 1px solid #b3d7ff;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .reading-lists-info p {
+      margin: 0;
+      color: #0056b3;
+    }
+
+    .save-btn-placeholder {
+      padding: 4px 12px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 15px;
+      cursor: not-allowed;
+      font-size: 0.8em;
     }
 
     .search-section {
@@ -252,6 +284,8 @@ import { NewsArticleDto } from '../../../shared/models/news.model';
       justify-content: space-between;
       align-items: center;
       margin-top: 15px;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .read-more {
@@ -323,7 +357,10 @@ export class NewsListComponent implements OnInit {
   connectionTested = false;
   connectionStatus = false;
 
-  constructor(private newsService: NewsService) {}
+  constructor(
+    private newsService: NewsService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
     this.loadLatestNews();
