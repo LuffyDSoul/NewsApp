@@ -1,13 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterModule, Router } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { CurrentUser } from './shared/models/auth.model';
+import { UserProfileModalComponent } from './features/user-profile/user-profile-modal.component';
 
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterModule],
+selector: 'app-root',
+standalone: true,
+imports: [CommonModule, RouterOutlet, RouterModule, UserProfileModalComponent],
   template: `
     <div class="app-container">
       <header class="app-header">
@@ -21,11 +22,25 @@ import { CurrentUser } from './shared/models/auth.model';
         </nav>
 
         <div class="header-user" *ngIf="currentUser.isAuthenticated; else loginSection">
-          <div class="user-info">
-            <span class="welcome-text">Welcome, </span>
-            <span class="username">{{ currentUser.userName || currentUser.email }}</span>
+          <div class="user-menu">
+            <div class="user-info" (click)="toggleUserDropdown()">
+              <span class="welcome-text">Bienvenido, </span>
+              <span class="username">{{ currentUser.userName || currentUser.email }}</span>
+              <span class="dropdown-arrow">▼</span>
+            </div>
+            
+            <!-- Dropdown Menu -->
+            <div class="user-dropdown" *ngIf="showUserDropdown">
+              <button (click)="openProfileModal()" class="dropdown-item">
+                <span class="dropdown-icon">👤</span>
+                Mi Perfil
+              </button>
+              <button (click)="logout()" class="dropdown-item logout">
+                <span class="dropdown-icon">🚪</span>
+                Cerrar Sesión
+              </button>
+            </div>
           </div>
-          <button (click)="logout()" class="logout-btn">Logout</button>
         </div>
 
         <ng-template #loginSection>
@@ -43,6 +58,12 @@ import { CurrentUser } from './shared/models/auth.model';
       <footer class="app-footer">
         <p>&copy; 2025 NewsApp. Powered by ABP Framework & Angular.</p>
       </footer>
+      
+      <!-- User Profile Modal -->
+      <app-user-profile-modal
+        [isOpen]="showProfileModal"
+        (closeModal)="closeProfileModal()">
+      </app-user-profile-modal>
     </div>
   `,
   styles: [`
@@ -98,16 +119,26 @@ import { CurrentUser } from './shared/models/auth.model';
     }
 
     .header-user {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
+      position: relative;
+    }
+
+    .user-menu {
+      position: relative;
     }
 
     .user-info {
       display: flex;
-      flex-direction: column;
-      align-items: flex-end;
+      align-items: center;
+      gap: 0.5rem;
       font-size: 0.9em;
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      transition: background-color 0.3s ease;
+    }
+
+    .user-info:hover {
+      background: rgba(255, 255, 255, 0.1);
     }
 
     .welcome-text {
@@ -118,19 +149,54 @@ import { CurrentUser } from './shared/models/auth.model';
       font-weight: 600;
     }
 
-    .logout-btn {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      font-weight: 500;
+    .dropdown-arrow {
+      font-size: 0.7em;
+      transition: transform 0.3s ease;
     }
 
-    .logout-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
+    .user-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      min-width: 200px;
+      z-index: 1000;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    .dropdown-item {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: none;
+      background: none;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: #333;
+      transition: background-color 0.2s ease;
+    }
+
+    .dropdown-item:hover {
+      background: #f8f9fa;
+    }
+
+    .dropdown-item.logout {
+      border-top: 1px solid #e9ecef;
+      color: #dc3545;
+    }
+
+    .dropdown-item.logout:hover {
+      background: #f8d7da;
+    }
+
+    .dropdown-icon {
+      font-size: 1rem;
     }
 
     .header-auth {
@@ -196,31 +262,55 @@ import { CurrentUser } from './shared/models/auth.model';
   `]
 })
 export class App implements OnInit {
-  title = 'NewsApp Angular';
-  currentUser: CurrentUser = { isAuthenticated: false, roles: [] };
+title = 'NewsApp Angular';
+currentUser: CurrentUser = { isAuthenticated: false, roles: [] };
+showUserDropdown = false;
+showProfileModal = false;
 
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {}
+private authService = inject(AuthService);
+private router = inject(Router);
+
+constructor() {}
 
   ngOnInit(): void {
-    this.authService.currentUser$.subscribe(user => {
+    this.authService.currentUser$.subscribe((user: CurrentUser) => {
       this.currentUser = user;
     });
-  }
 
-  goHome(): void {
-    if (this.currentUser.isAuthenticated) {
-      this.router.navigate(['/news']);
-    } else {
-      this.router.navigate(['/auth/login']);
-    }
-  }
-
-  logout(): void {
-    this.authService.logout().subscribe(() => {
-      this.router.navigate(['/auth/login']);
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.user-menu')) {
+        this.showUserDropdown = false;
+      }
     });
   }
+
+goHome(): void {
+  if (this.currentUser.isAuthenticated) {
+    this.router.navigate(['/news']);
+  } else {
+    this.router.navigate(['/auth/login']);
+  }
+}
+
+toggleUserDropdown(): void {
+  this.showUserDropdown = !this.showUserDropdown;
+}
+
+openProfileModal(): void {
+  this.showUserDropdown = false;
+  this.showProfileModal = true;
+}
+
+closeProfileModal(): void {
+  this.showProfileModal = false;
+}
+
+logout(): void {
+  this.showUserDropdown = false;
+  this.authService.logout().subscribe(() => {
+    this.router.navigate(['/auth/login']);
+  });
+}
 }

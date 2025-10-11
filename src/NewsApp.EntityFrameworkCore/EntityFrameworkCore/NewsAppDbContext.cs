@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NewsApp.Themes;
 using NewsApp.ReadingLists;
+using NewsApp.Domain.UserProfile;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
 using Volo.Abp.Data;
@@ -62,6 +63,7 @@ public class NewsAppDbContext :
     public DbSet<Theme> Themes { get; set; }
     public DbSet<ReadingList> ReadingLists { get; set; }
     public DbSet<SavedArticle> SavedArticles { get; set; }
+    public DbSet<UserPreferences> UserPreferences { get; set; }
 
     #endregion
 
@@ -155,6 +157,21 @@ public class NewsAppDbContext :
             b.HasIndex(x => x.UserId);
             b.HasIndex(x => x.ReadingListId);
             b.HasIndex(x => new { x.UserId, x.Url }).IsUnique();
+        });
+
+        // User Preferences
+        builder.Entity<UserPreferences>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "UserPreferences", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            
+            b.Property(x => x.NewsLanguageCode).IsRequired().HasMaxLength(10);
+            b.Property(x => x.NewsLanguageName).IsRequired().HasMaxLength(50);
+            b.Property(x => x.TimeZone).HasMaxLength(100);
+            b.Property(x => x.Theme).HasMaxLength(20);
+            
+            // Index for user queries
+            b.HasIndex(x => x.UserId).IsUnique();
         });
     }
 }

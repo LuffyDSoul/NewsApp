@@ -26,6 +26,11 @@ export const routes: Routes = [
     canActivate: [AuthGuard]  // Proteger ruta de listas de lectura
   },
   {
+    path: 'profile',
+    loadComponent: () => import('./features/user-profile/user-profile.component').then(m => m.UserProfileComponent),
+    canActivate: [AuthGuard]  // Proteger ruta de perfil
+  },
+  {
     path: '**',
     redirectTo: '/news'
   }
