@@ -198,6 +198,27 @@ namespace NewsApp.ReadingLists
                 throw new UserFriendlyException("You can only delete your own reading lists.");
             }
 
+            // Move any saved articles referencing this list to "Uncategorized" (null ReadingListId)
+            // to avoid foreign key constraint violations when deleting the list.
+            var articles = await _savedArticleRepository.GetArticlesByReadingListAsync(id);
+            if (articles != null && articles.Count > 0)
+            {
+                // Update articles in-memory and defer saving for a single SaveChanges call to
+                // avoid repeated DB round-trips and ensure atomicity within the current unit of work.
+                foreach (var article in articles)
+                {
+                    article.ReadingListId = null;
+                    await _savedArticleRepository.UpdateAsync(article, autoSave: false);
+                }
+
+                var uow = CurrentUnitOfWork;
+                if (uow != null)
+                {
+                    await uow.SaveChangesAsync();
+                }
+            }
+
+            // Delete the reading list (changes already flushed above)
             await _readingListRepository.DeleteAsync(readingList, autoSave: true);
         }
 
@@ -216,7 +237,11 @@ namespace NewsApp.ReadingLists
                 }
             }
 
-            await CurrentUnitOfWork.SaveChangesAsync();
+            var uow2 = CurrentUnitOfWork;
+            if (uow2 != null)
+            {
+                await uow2.SaveChangesAsync();
+            }
         }
     }
 }

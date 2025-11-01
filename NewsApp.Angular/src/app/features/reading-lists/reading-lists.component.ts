@@ -210,6 +210,22 @@ import {
         </div>
       </div>
 
+      <!-- Delete Confirmation Modal -->
+      <div class="modal delete-modal" *ngIf="showDeleteModal" (click)="cancelDelete()">
+        <div class="modal-content delete-confirm" (click)="$event.stopPropagation()">
+          <h3>⚠️ Confirm Deletion</h3>
+          <p class="delete-message">{{ deleteMessage }}</p>
+          <div class="modal-actions">
+            <button (click)="confirmDelete()" class="confirm-delete-btn">
+              🗑️ Yes, Delete
+            </button>
+            <button (click)="cancelDelete()" class="cancel-btn">
+              ❌ Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Success/Error notifications -->
       <div class="notification success" *ngIf="showSuccessNotification">
         <span>{{ successMessage }}</span>
@@ -699,6 +715,38 @@ import {
       color: white;
     }
 
+    .delete-modal .modal-content {
+      max-width: 500px;
+    }
+
+    .delete-confirm {
+      text-align: center;
+    }
+
+    .delete-message {
+      font-size: 16px;
+      margin: 20px 0;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .confirm-delete-btn {
+      background: #dc3545;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .confirm-delete-btn:hover {
+      background: #c82333;
+      transform: translateY(-1px);
+    }
+
     .loading {
       text-align: center;
       padding: 60px 20px;
@@ -776,7 +824,10 @@ export class ReadingListsComponent implements OnInit {
   // Modal state
   showCreateModal = false;
   showEditModal = false;
+  showDeleteModal = false;
   editingList: ReadingListDto | null = null;
+  listToDelete: ReadingListDto | null = null;
+  deleteMessage = '';
   formData = {
     name: '',
     description: '',
@@ -909,29 +960,52 @@ export class ReadingListsComponent implements OnInit {
   }
 
   deleteList(list: ReadingListDto) {
-    const message = list.articleCount > 0 
+    console.log('deleteList called for:', list);
+    this.listToDelete = list;
+    this.deleteMessage = list.articleCount > 0 
       ? `Delete "${list.name}" with ${list.articleCount} articles? The articles will be moved to "Uncategorized".`
       : `Delete "${list.name}"?`;
     
-    if (confirm(message)) {
-      this.deletingList = list.id;
-      this.readingListService.deleteReadingList(list.id).subscribe({
-        next: () => {
-          this.readingLists = this.readingLists.filter(l => l.id !== list.id);
-          this.deletingList = null;
-          if (this.selectedListFilter === list.id) {
-            this.selectedListFilter = '';
-            this.highlightedListId = '';
-            this.loadSavedArticles();
-          }
-          this.showSuccess(`Reading list "${list.name}" deleted!`);
-        },
-        error: (err: any) => {
-          this.handleError('Failed to delete reading list', err);
-          this.deletingList = null;
+    console.log('Showing delete modal with message:', this.deleteMessage);
+    this.showDeleteModal = true;
+  }
+
+  confirmDelete() {
+    if (!this.listToDelete) return;
+    
+    console.log('Delete confirmed for list:', this.listToDelete.name);
+    const list = this.listToDelete;
+    
+    this.showDeleteModal = false;
+    this.deletingList = list.id;
+    
+    this.readingListService.deleteReadingList(list.id).subscribe({
+      next: () => {
+        console.log('Deletion successful for list:', list.name);
+        this.readingLists = this.readingLists.filter(l => l.id !== list.id);
+        this.deletingList = null;
+        this.listToDelete = null;
+        if (this.selectedListFilter === list.id) {
+          this.selectedListFilter = '';
+          this.highlightedListId = '';
+          this.loadSavedArticles();
         }
-      });
-    }
+        this.showSuccess(`Reading list "${list.name}" deleted!`);
+      },
+      error: (err: any) => {
+        console.error('Deletion failed:', err);
+        this.handleError('Failed to delete reading list', err);
+        this.deletingList = null;
+        this.listToDelete = null;
+      }
+    });
+  }
+
+  cancelDelete() {
+    console.log('Delete cancelled');
+    this.showDeleteModal = false;
+    this.listToDelete = null;
+    this.deleteMessage = '';
   }
 
   saveList() {
