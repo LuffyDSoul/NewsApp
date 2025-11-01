@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import { 
   UserProfile, 
   UpdateUserProfile, 
@@ -13,9 +14,11 @@ import {
   providedIn: 'root'
 })
 export class UserProfileService {
-  private readonly apiUrl = '/api/app/user-profile';
+  private readonly apiUrl = `${environment.apiUrl}/app/user-profile`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    console.log('UserProfileService initialized with apiUrl:', this.apiUrl);
+  }
 
   /**
    * Get current user's profile information

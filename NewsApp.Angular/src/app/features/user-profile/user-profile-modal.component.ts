@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
@@ -53,12 +53,22 @@ import {
               <form [formGroup]="profileForm" (ngSubmit)="updateProfile()">
                 <div class="form-group">
                   <label for="userName">Nombre de Usuario *</label>
-                  <input 
-                    type="text" 
-                    id="userName" 
-                    formControlName="userName"
-                    class="form-control"
-                    [class.error]="profileForm.get('userName')?.invalid && profileForm.get('userName')?.touched">
+                  <div class="input-with-edit">
+                    <input 
+                      type="text" 
+                      id="userName" 
+                      formControlName="userName"
+                      class="form-control"
+                      [readonly]="!editMode.userName"
+                      [class.error]="profileForm.get('userName')?.invalid && profileForm.get('userName')?.touched">
+                    <button 
+                      type="button" 
+                      class="edit-btn" 
+                      (click)="toggleEditMode('userName')"
+                      [title]="editMode.userName ? 'Bloquear' : 'Editar'">
+                      {{ editMode.userName ? '🔒' : '✏️' }}
+                    </button>
+                  </div>
                   <div class="error-message" *ngIf="profileForm.get('userName')?.invalid && profileForm.get('userName')?.touched">
                     El nombre de usuario es requerido
                   </div>
@@ -66,12 +76,22 @@ import {
 
                 <div class="form-group">
                   <label for="email">Correo Electrónico *</label>
-                  <input 
-                    type="email" 
-                    id="email" 
-                    formControlName="email"
-                    class="form-control"
-                    [class.error]="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">
+                  <div class="input-with-edit">
+                    <input 
+                      type="email" 
+                      id="email" 
+                      formControlName="email"
+                      class="form-control"
+                      [readonly]="!editMode.email"
+                      [class.error]="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">
+                    <button 
+                      type="button" 
+                      class="edit-btn" 
+                      (click)="toggleEditMode('email')"
+                      [title]="editMode.email ? 'Bloquear' : 'Editar'">
+                      {{ editMode.email ? '🔒' : '✏️' }}
+                    </button>
+                  </div>
                   <div class="email-status" *ngIf="userProfile?.emailConfirmed; else unconfirmedEmail">
                     <span class="status-confirmed">✓ Correo confirmado</span>
                   </div>
@@ -91,36 +111,69 @@ import {
                 <div class="form-row">
                   <div class="form-group">
                     <label for="name">Nombre</label>
-                    <input 
-                      type="text" 
-                      id="name" 
-                      formControlName="name"
-                      class="form-control">
+                    <div class="input-with-edit">
+                      <input 
+                        type="text" 
+                        id="name" 
+                        formControlName="name"
+                        class="form-control"
+                        [readonly]="!editMode.name">
+                      <button 
+                        type="button" 
+                        class="edit-btn" 
+                        (click)="toggleEditMode('name')"
+                        [title]="editMode.name ? 'Bloquear' : 'Editar'">
+                        {{ editMode.name ? '🔒' : '✏️' }}
+                      </button>
+                    </div>
                   </div>
 
                   <div class="form-group">
                     <label for="surname">Apellido</label>
-                    <input 
-                      type="text" 
-                      id="surname" 
-                      formControlName="surname"
-                      class="form-control">
+                    <div class="input-with-edit">
+                      <input 
+                        type="text" 
+                        id="surname" 
+                        formControlName="surname"
+                        class="form-control"
+                        [readonly]="!editMode.surname">
+                      <button 
+                        type="button" 
+                        class="edit-btn" 
+                        (click)="toggleEditMode('surname')"
+                        [title]="editMode.surname ? 'Bloquear' : 'Editar'">
+                        {{ editMode.surname ? '🔒' : '✏️' }}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 <div class="form-group">
                   <label for="phoneNumber">Número de Teléfono</label>
-                  <input 
-                    type="tel" 
-                    id="phoneNumber" 
-                    formControlName="phoneNumber"
-                    class="form-control">
+                  <div class="input-with-edit">
+                    <input 
+                      type="tel" 
+                      id="phoneNumber" 
+                      formControlName="phoneNumber"
+                      class="form-control"
+                      [readonly]="!editMode.phoneNumber">
+                    <button 
+                      type="button" 
+                      class="edit-btn" 
+                      (click)="toggleEditMode('phoneNumber')"
+                      [title]="editMode.phoneNumber ? 'Bloquear' : 'Editar'">
+                      {{ editMode.phoneNumber ? '🔒' : '✏️' }}
+                    </button>
+                  </div>
                 </div>
 
                 <div class="form-actions">
-                  <button type="submit" class="btn btn-primary" [disabled]="profileForm.invalid || isLoading">
+                  <button type="submit" class="btn btn-primary" [disabled]="profileForm.invalid || isLoading || !hasChanges()">
                     <span *ngIf="isLoading">Guardando...</span>
                     <span *ngIf="!isLoading">Guardar Cambios</span>
+                  </button>
+                  <button type="button" class="btn btn-secondary" (click)="cancelChanges()" [disabled]="isLoading || !hasChanges()">
+                    Cancelar
                   </button>
                 </div>
               </form>
@@ -348,6 +401,58 @@ import {
       box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
     }
 
+    .form-control:read-only {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
+      color: #666;
+    }
+
+    .form-control:read-only:focus {
+      border-color: #ddd;
+      box-shadow: none;
+    }
+
+    .input-with-edit {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+    }
+
+    .input-with-edit .form-control {
+      flex: 1;
+    }
+
+    .edit-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      height: 36px;
+    }
+
+    .edit-btn:hover {
+      background: #5a6fd8;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+      margin-right: 0.5rem;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #5a6268;
+    }
+
     .form-control.error {
       border-color: #dc3545;
     }
@@ -467,7 +572,7 @@ import {
     }
   `]
 })
-export class UserProfileModalComponent implements OnInit, OnDestroy {
+export class UserProfileModalComponent implements OnInit, OnDestroy, OnChanges {
   @Input() isOpen = false;
   @Output() closeModal = new EventEmitter<void>();
 
@@ -477,6 +582,18 @@ export class UserProfileModalComponent implements OnInit, OnDestroy {
   isLoading = false;
   successMessage = '';
   errorMessage = '';
+
+  // Edit mode tracking
+  editMode = {
+    userName: false,
+    email: false,
+    name: false,
+    surname: false,
+    phoneNumber: false
+  };
+
+  // Store original values for cancel functionality
+  originalValues: any = {};
 
   profileForm: FormGroup;
   passwordForm: FormGroup;
@@ -494,7 +611,16 @@ export class UserProfileModalComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    console.log('UserProfileModalComponent initialized, isOpen:', this.isOpen);
     if (this.isOpen) {
+      this.loadProfile();
+      this.loadAvailableLanguages();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isOpen'] && changes['isOpen'].currentValue === true) {
+      console.log('Modal opened, loading profile...');
       this.loadProfile();
       this.loadAvailableLanguages();
     }
@@ -545,27 +671,52 @@ export class UserProfileModalComponent implements OnInit, OnDestroy {
   }
 
   private loadProfile(): void {
+    console.log('Loading profile in modal...');
     this.userProfileService.getMyProfile()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (profile: UserProfile) => {
+          console.log('Profile loaded:', profile);
           this.userProfile = profile;
-          this.profileForm.patchValue({
+          const profileData = {
             userName: profile.userName,
             email: profile.email,
             name: profile.name,
             surname: profile.surname,
             phoneNumber: profile.phoneNumber
-          });
+          };
+          this.profileForm.patchValue(profileData);
+          this.originalValues = { ...profileData };
           this.preferencesForm.patchValue({
             newsLanguageCode: profile.newsLanguageCode
           });
         },
         error: (error: any) => {
-          this.showError('Error al cargar el perfil');
           console.error('Error loading profile:', error);
+          this.showError('Error al cargar el perfil');
         }
       });
+  }
+
+  toggleEditMode(field: string): void {
+    this.editMode[field as keyof typeof this.editMode] = !this.editMode[field as keyof typeof this.editMode];
+  }
+
+  hasChanges(): boolean {
+    if (!this.originalValues) return false;
+    const currentValues = this.profileForm.value;
+    return Object.keys(this.originalValues).some(
+      key => this.originalValues[key] !== currentValues[key]
+    );
+  }
+
+  cancelChanges(): void {
+    this.profileForm.patchValue(this.originalValues);
+    // Reset edit mode
+    Object.keys(this.editMode).forEach(key => {
+      this.editMode[key as keyof typeof this.editMode] = false;
+    });
+    this.clearMessages();
   }
 
   private loadAvailableLanguages(): void {
@@ -602,6 +753,12 @@ export class UserProfileModalComponent implements OnInit, OnDestroy {
             if (result.profile) {
               this.userProfile = result.profile;
             }
+            // Reset edit mode and update original values
+            Object.keys(this.editMode).forEach(key => {
+              this.editMode[key as keyof typeof this.editMode] = false;
+            });
+            this.originalValues = { ...this.profileForm.value };
+            
             if (result.requiresEmailConfirmation) {
               this.showError('Se ha enviado un correo de confirmación a tu nueva dirección.');
             }
