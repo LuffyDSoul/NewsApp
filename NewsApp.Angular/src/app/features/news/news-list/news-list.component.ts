@@ -89,12 +89,13 @@ import { ReadingListDto, SaveArticleDto, SavedArticleDto, CreateReadingListDto }
                   [disabled]="savingArticles.has(article.url)">
                   {{ getSaveButtonText(article.url) }}
                 </button>
-                <div class="save-dropdown" *ngIf="!isArticleSaved(article.url) && readingLists.length > 0">
-                  <select (change)="saveToList(article, $event)" class="list-select">
-                    <option value="">Save to list...</option>
-                    <option *ngFor="let list of readingLists" [value]="list.id">{{ list.name }}</option>
-                  </select>
-                </div>
+                <button 
+                  *ngIf="readingLists.length > 0"
+                  (click)="openSaveToListsModal(article)"
+                  class="save-to-lists-btn"
+                  [disabled]="savingArticles.has(article.url)">
+                  📋 {{ isArticleSaved(article.url) ? 'Manage Lists' : 'Save to List(s)' }}
+                </button>
               </div>
               <span class="author" *ngIf="article.author">By {{ article.author }}</span>
             </div>
@@ -142,6 +143,45 @@ import { ReadingListDto, SaveArticleDto, SavedArticleDto, CreateReadingListDto }
               {{ creatingList ? 'Creating...' : 'Create' }}
             </button>
             <button (click)="cancelCreateList()" class="cancel-btn">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save to Lists Modal -->
+      <div class="modal" *ngIf="showSaveToListsModal" (click)="closeSaveToListsModal()">
+        <div class="modal-content save-to-lists-modal" (click)="$event.stopPropagation()">
+          <h3>📋 Save to Reading Lists</h3>
+          <p class="modal-subtitle">Select one or more lists to save this article</p>
+          
+          <div class="lists-checkboxes" *ngIf="readingLists.length > 0">
+            <label *ngFor="let list of readingLists" class="checkbox-item">
+              <input 
+                type="checkbox" 
+                [checked]="selectedListIds.has(list.id)"
+                (change)="toggleListSelection(list.id)">
+              <span class="checkbox-label">
+                <span class="list-name">{{ list.name }}</span>
+                <span class="list-count">({{ list.articleCount }} articles)</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="no-lists" *ngIf="readingLists.length === 0">
+            <p>You don't have any reading lists yet.</p>
+            <button (click)="createListFromSaveModal()" class="create-list-link">
+              ➕ Create your first list
+            </button>
+          </div>
+
+          <div class="modal-actions">
+            <button 
+              (click)="saveToMultipleLists()" 
+              class="save-btn" 
+              [disabled]="selectedListIds.size === 0 || savingToMultipleLists">
+              <ng-container *ngIf="savingToMultipleLists">💾 Saving...</ng-container>
+              <ng-container *ngIf="!savingToMultipleLists">💾 Save to {{ selectedListIds.size }} list<span *ngIf="selectedListIds.size !== 1">s</span></ng-container>
+            </button>
+            <button (click)="closeSaveToListsModal()" class="cancel-btn">❌ Cancel</button>
           </div>
         </div>
       </div>
@@ -370,17 +410,147 @@ import { ReadingListDto, SaveArticleDto, SavedArticleDto, CreateReadingListDto }
       background: #545b62;
     }
 
+    /* Save to Lists Modal Styles */
+    .save-to-lists-modal {
+      max-width: 500px;
+    }
+
+    .modal-subtitle {
+      color: #6c757d;
+      font-size: 14px;
+      margin: -5px 0 15px 0;
+    }
+
+    .lists-checkboxes {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      margin-bottom: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .checkbox-item:hover {
+      background-color: #f8f9fa;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      margin-right: 10px;
+      cursor: pointer;
+      width: 18px;
+      height: 18px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .list-name {
+      font-weight: 500;
+      color: #343a40;
+    }
+
+    .list-count {
+      color: #6c757d;
+      font-size: 13px;
+    }
+
+    .no-lists {
+      text-align: center;
+      padding: 30px;
+      color: #6c757d;
+    }
+
+    .no-lists p {
+      margin-bottom: 15px;
+    }
+
+    .create-list-link {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .create-list-link:hover {
+      background: #218838;
+    }
+
+    .save-to-lists-btn {
+      background: #007bff;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background-color 0.2s;
+    }
+
+    .save-to-lists-btn:hover {
+      background: #0056b3;
+    }
+
+    .save-to-lists-btn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .save-btn {
+      background: #28a745;
+      color: white;
+    }
+
+    .save-btn:hover {
+      background: #218838;
+    }
+
+    .save-btn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+
     /* Notification */
     .notification {
       position: fixed;
       top: 20px;
       right: 20px;
       padding: 15px 20px;
-      border-radius: 5px;
+      border-radius: 8px;
       z-index: 1001;
       display: flex;
       align-items: center;
       gap: 10px;
+      max-width: 500px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
     }
 
     .notification.success {
@@ -389,12 +559,29 @@ import { ReadingListDto, SaveArticleDto, SavedArticleDto, CreateReadingListDto }
       border: 1px solid #c3e6cb;
     }
 
+    .notification span {
+      flex: 1;
+      word-wrap: break-word;
+      line-height: 1.5;
+    }
+
     .close-notification {
       background: none;
       border: none;
-      font-size: 18px;
+      font-size: 24px;
       cursor: pointer;
-      margin-left: 10px;
+      color: #155724;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .close-notification:hover {
+      opacity: 0.7;
     }
 
     /* Rest of existing styles... */
@@ -626,10 +813,15 @@ export class NewsListComponent implements OnInit {
   
   // Modal properties
   showCreateListModal = false;
+  showSaveToListsModal = false;
+  selectedArticleForSave: NewsArticleDto | null = null;
+  selectedListIds = new Set<string>();
+  originalListIds = new Set<string>(); // Track original lists for saved articles
   newListName = '';
   newListDescription = '';
   newListIsPublic = false;
   creatingList = false;
+  savingToMultipleLists = false;
 
   // Notification properties
   showSuccessNotification = false;
@@ -803,9 +995,10 @@ export class NewsListComponent implements OnInit {
   showSuccessMessage(message: string) {
     this.successMessage = message;
     this.showSuccessNotification = true;
+    // Show notification for 5 seconds (increased from 3) to allow reading longer messages
     setTimeout(() => {
       this.showSuccessNotification = false;
-    }, 3000);
+    }, 5000);
   }
 
   showErrorMessage(message: string) {
@@ -892,5 +1085,163 @@ export class NewsListComponent implements OnInit {
 
   onImageError(event: any) {
     event.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"%3E%3Crect width="100%25" height="100%25" fill="%23f0f0f0"%3E%3C/rect%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="14" fill="%23999" text-anchor="middle" dy=".3em"%3ENo Image Available%3C/text%3E%3C/svg%3E';
+  }
+
+  // Multi-list save methods
+  openSaveToListsModal(article: NewsArticleDto) {
+    this.selectedArticleForSave = article;
+    this.selectedListIds.clear();
+    this.originalListIds.clear();
+    this.showSaveToListsModal = true;
+    
+    // If article is already saved, load the lists where it's saved
+    if (this.isArticleSaved(article.url)) {
+      this.readingListService.getReadingListIdsForArticle(article.url).subscribe({
+        next: (listIds: string[]) => {
+          listIds.forEach(id => {
+            this.selectedListIds.add(id);
+            this.originalListIds.add(id); // Track original state
+          });
+        },
+        error: (err: any) => {
+          console.error('Error loading lists for article:', err);
+        }
+      });
+    }
+  }
+
+  closeSaveToListsModal() {
+    this.showSaveToListsModal = false;
+    this.selectedArticleForSave = null;
+    this.selectedListIds.clear();
+    this.originalListIds.clear();
+    this.savingToMultipleLists = false;
+  }
+
+  toggleListSelection(listId: string) {
+    if (this.selectedListIds.has(listId)) {
+      this.selectedListIds.delete(listId);
+    } else {
+      this.selectedListIds.add(listId);
+    }
+  }
+
+  async saveToMultipleLists() {
+    if (!this.selectedArticleForSave || this.savingToMultipleLists) {
+      return;
+    }
+
+    // Check if no selection - only allow if article wasn't saved before
+    if (this.selectedListIds.size === 0 && this.originalListIds.size === 0) {
+      this.showErrorMessage('Debes seleccionar al menos una lista.');
+      return;
+    }
+
+    this.savingToMultipleLists = true;
+    const article = this.selectedArticleForSave;
+
+    // Determine which lists to add to and which to remove from
+    const listsToAdd = Array.from(this.selectedListIds).filter(id => !this.originalListIds.has(id));
+    const listsToRemove = Array.from(this.originalListIds).filter(id => !this.selectedListIds.has(id));
+
+    const addedLists: string[] = [];
+    const removedLists: string[] = [];
+    const failedLists: string[] = [];
+    
+    // Add to new lists
+    for (const listId of listsToAdd) {
+      const listName = this.readingLists.find(l => l.id === listId)?.name || 'Unknown';
+      
+      try {
+        const saveData: SaveArticleDto = {
+          readingListId: listId,
+          source: article.source || '',
+          title: article.title,
+          description: article.description,
+          url: article.url,
+          urlToImage: article.urlToImage,
+          publishedAt: article.publishedAt,
+          content: article.content,
+          languageCode: article.languageCode || 'en',
+          author: article.author
+        };
+        
+        await this.readingListService.saveArticle(saveData).toPromise();
+        addedLists.push(listName);
+        
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+      } catch (err: any) {
+        console.error(`❌ Error agregando a ${listName}:`, err);
+        failedLists.push(listName);
+      }
+    }
+
+    // Remove from unselected lists
+    for (const listId of listsToRemove) {
+      const listName = this.readingLists.find(l => l.id === listId)?.name || 'Unknown';
+      
+      try {
+        await this.readingListService.unsaveArticleFromList(article.url, listId).toPromise();
+        removedLists.push(listName);
+        
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+      } catch (err: any) {
+        console.error(`❌ Error eliminando de ${listName}:`, err);
+        failedLists.push(listName);
+      }
+    }
+
+    // Update UI
+    const hasChanges = addedLists.length > 0 || removedLists.length > 0;
+    
+    if (hasChanges) {
+      // Update saved state
+      if (this.selectedListIds.size > 0) {
+        this.savedArticleUrls.add(article.url);
+      } else {
+        this.savedArticleUrls.delete(article.url);
+      }
+      
+      this.loadReadingLists(); // Refresh to update counts
+      
+      // Create a descriptive success message
+      let messages: string[] = [];
+      
+      if (addedLists.length > 0) {
+        const addedText = addedLists.length === 1 
+          ? addedLists[0]
+          : addedLists.slice(0, -1).join(', ') + ' y ' + addedLists[addedLists.length - 1];
+        messages.push(`Agregado a: ${addedText}`);
+      }
+      
+      if (removedLists.length > 0) {
+        const removedText = removedLists.length === 1 
+          ? removedLists[0]
+          : removedLists.slice(0, -1).join(', ') + ' y ' + removedLists[removedLists.length - 1];
+        messages.push(`Eliminado de: ${removedText}`);
+      }
+      
+      let message = `"${article.title}" - ${messages.join(' | ')}`;
+      
+      if (failedLists.length > 0) {
+        message += ` (Errores en: ${failedLists.join(', ')})`;
+      }
+      
+      this.showSuccessMessage(message);
+    } else if (failedLists.length > 0) {
+      this.showErrorMessage('No se pudieron realizar los cambios solicitados.');
+    } else {
+      this.showSuccessMessage('No hay cambios que guardar.');
+    }
+    
+    this.closeSaveToListsModal();
+  }
+
+  createListFromSaveModal() {
+    // Close the save modal and open the create modal
+    this.closeSaveToListsModal();
+    this.showCreateListModal = true;
   }
 }

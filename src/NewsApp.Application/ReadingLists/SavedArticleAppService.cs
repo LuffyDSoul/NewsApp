@@ -95,20 +95,38 @@ namespace NewsApp.ReadingLists
         {
             var currentUserId = CurrentUser.GetId();
 
-            // Check if article is already saved
-            var existingArticle = await _savedArticleRepository.GetUserSavedArticleByUrlAsync(currentUserId, input.Url);
-            if (existingArticle != null)
-            {
-                throw new UserFriendlyException("This article is already saved.");
-            }
-
-            // Validate reading list if provided
+            // If saving to a specific reading list, check if article is already in THAT list
             if (input.ReadingListId.HasValue)
             {
+                // Check if article already exists in this specific list using FindAsync (returns null if not found)
+                var existingInList = await _savedArticleRepository.FindAsync(
+                    a => a.UserId == currentUserId && 
+                         a.Url == input.Url && 
+                         a.ReadingListId == input.ReadingListId.Value);
+                
+                if (existingInList != null)
+                {
+                    throw new UserFriendlyException("This article is already in the selected reading list.");
+                }
+
+                // Validate reading list ownership
                 var ownsReadingList = await _readingListRepository.UserOwnsListAsync(currentUserId, input.ReadingListId.Value);
                 if (!ownsReadingList)
                 {
                     throw new UserFriendlyException("You can only save articles to your own reading lists.");
+                }
+            }
+            else
+            {
+                // If not saving to a specific list, check if article exists without a list (uncategorized)
+                var existingArticle = await _savedArticleRepository.FindAsync(
+                    a => a.UserId == currentUserId && 
+                         a.Url == input.Url && 
+                         a.ReadingListId == null);
+                
+                if (existingArticle != null)
+                {
+                    throw new UserFriendlyException("This article is already saved in your uncategorized articles.");
                 }
             }
 
@@ -365,6 +383,32 @@ namespace NewsApp.ReadingLists
                 SavedThisWeekCount = savedThisWeekCount,
                 ReadThisWeekCount = readThisWeekCount
             };
+        }
+
+        public async Task<List<Guid>> GetReadingListIdsForArticleAsync(string url)
+        {
+            var currentUserId = CurrentUser.GetId();
+            var savedArticles = await _savedArticleRepository.GetListAsync(
+                x => x.UserId == currentUserId && x.Url == url
+            );
+            
+            return savedArticles
+                .Where(a => a.ReadingListId.HasValue)
+                .Select(a => a.ReadingListId.Value)
+                .ToList();
+        }
+
+        public async Task UnsaveArticleByUrlAndListAsync(string url, Guid readingListId)
+        {
+            var currentUserId = CurrentUser.GetId();
+            var savedArticle = await _savedArticleRepository.FindAsync(
+                x => x.UserId == currentUserId && x.Url == url && x.ReadingListId == readingListId
+            );
+
+            if (savedArticle != null)
+            {
+                await _savedArticleRepository.DeleteAsync(savedArticle, autoSave: true);
+            }
         }
     }
 }

@@ -156,7 +156,8 @@ public class NewsAppDbContext :
             // Indexes for performance
             b.HasIndex(x => x.UserId);
             b.HasIndex(x => x.ReadingListId);
-            b.HasIndex(x => new { x.UserId, x.Url }).IsUnique();
+            // Allow same URL in different lists for the same user
+            b.HasIndex(x => new { x.UserId, x.Url, x.ReadingListId }).IsUnique();
         });
 
         // User Preferences

@@ -1,0 +1,23 @@
+            return new SavedArticleStatsDto
+            {
+                TotalCount = totalCount,
+                UnreadCount = unreadCount,
+                SavedThisWeekCount = savedThisWeekCount,
+                ReadThisWeekCount = readThisWeekCount
+            };
+        }
+
+        public async Task<List<Guid>> GetReadingListIdsForArticleAsync(string url)
+        {
+            var currentUserId = CurrentUser.GetId();
+            var savedArticles = await _savedArticleRepository.GetListAsync(
+                x => x.UserId == currentUserId && x.Url == url
+            );
+            
+            return savedArticles
+                .Where(a => a.ReadingListId.HasValue)
+                .Select(a => a.ReadingListId.Value)
+                .ToList();
+        }
+    }
+}

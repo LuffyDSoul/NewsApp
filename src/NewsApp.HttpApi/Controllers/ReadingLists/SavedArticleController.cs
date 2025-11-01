@@ -128,5 +128,23 @@ namespace NewsApp.Controllers.ReadingLists
         {
             return await _savedArticleAppService.GetSavedArticleStatsAsync();
         }
+
+        /// <summary>
+        /// Gets the list of reading list IDs where an article is saved
+        /// </summary>
+        [HttpGet("lists-for-article")]
+        public async Task<List<Guid>> GetReadingListIdsForArticleAsync([FromQuery] string url)
+        {
+            return await _savedArticleAppService.GetReadingListIdsForArticleAsync(url);
+        }
+
+        /// <summary>
+        /// Removes a saved article from a specific reading list by URL
+        /// </summary>
+        [HttpDelete("by-url-and-list")]
+        public async Task UnsaveArticleByUrlAndListAsync([FromQuery] string url, [FromQuery] Guid readingListId)
+        {
+            await _savedArticleAppService.UnsaveArticleByUrlAndListAsync(url, readingListId);
+        }
     }
 }

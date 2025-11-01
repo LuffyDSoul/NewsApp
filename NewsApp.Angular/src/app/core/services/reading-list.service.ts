@@ -107,4 +107,23 @@ export class ReadingListService {
   getSavedArticleStats(): Observable<SavedArticleStatsDto> {
     return this.http.get<SavedArticleStatsDto>(`${this.baseUrl}/saved-articles/stats`);
   }
+
+  // New Lists API methods
+  addArticleToList(listId: string, articleId: string, notes?: string): Observable<any> {
+    const payload = {
+      articleId: articleId,
+      notes: notes
+    };
+    return this.http.post(`${this.baseUrl}/app/reading-list/${listId}/add-article`, payload);
+  }
+
+  getReadingListIdsForArticle(url: string): Observable<string[]> {
+    const encodedUrl = encodeURIComponent(url);
+    return this.http.get<string[]>(`${this.baseUrl}/saved-articles/lists-for-article?url=${encodedUrl}`);
+  }
+
+  unsaveArticleFromList(url: string, readingListId: string): Observable<void> {
+    const encodedUrl = encodeURIComponent(url);
+    return this.http.delete<void>(`${this.baseUrl}/saved-articles/by-url-and-list?url=${encodedUrl}&readingListId=${readingListId}`);
+  }
 }

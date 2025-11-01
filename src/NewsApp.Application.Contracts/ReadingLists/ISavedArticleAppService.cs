@@ -69,6 +69,16 @@ namespace NewsApp.ReadingLists
         /// Get statistics about saved articles
         /// </summary>
         Task<SavedArticleStatsDto> GetSavedArticleStatsAsync();
+
+        /// <summary>
+        /// Gets the list of reading list IDs where an article is saved
+        /// </summary>
+        Task<List<Guid>> GetReadingListIdsForArticleAsync(string url);
+
+        /// <summary>
+        /// Removes a saved article from a specific reading list by URL
+        /// </summary>
+        Task UnsaveArticleByUrlAndListAsync(string url, Guid readingListId);
     }
 
     /// <summary>

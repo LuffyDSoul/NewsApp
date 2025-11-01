@@ -239,6 +239,26 @@ import {
         </div>
       </div>
 
+      <!-- Delete Article Confirmation Modal -->
+      <div class="modal delete-modal" *ngIf="showDeleteArticleModal" (click)="cancelDeleteArticle()">
+        <div class="modal-content delete-confirm" (click)="$event.stopPropagation()">
+          <h3>⚠️ Remove Article</h3>
+          <p class="delete-message" *ngIf="articleToDelete">
+            Are you sure you want to remove<br>
+            <strong>"{{ articleToDelete.title }}"</strong><br>
+            from <strong>"{{ getListName(articleToDelete.readingListId) }}"</strong>?
+          </p>
+          <div class="modal-actions">
+            <button (click)="confirmDeleteArticle()" class="confirm-delete-btn">
+              🗑️ Yes, Remove
+            </button>
+            <button (click)="cancelDeleteArticle()" class="cancel-btn">
+              ❌ Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Success/Error notifications -->
       <div class="notification success" *ngIf="showSuccessNotification">
         <span>{{ successMessage }}</span>
@@ -875,8 +895,10 @@ export class ReadingListsComponent implements OnInit {
   showEditModal = false;
   showDeleteModal = false;
   showDuplicateNameModal = false;
+  showDeleteArticleModal = false;
   editingList: ReadingListDto | null = null;
   listToDelete: ReadingListDto | null = null;
+  articleToDelete: SavedArticleDto | null = null;
   deleteMessage = '';
   duplicateNameMessage = '';
   formData = {
@@ -973,19 +995,61 @@ export class ReadingListsComponent implements OnInit {
   }
 
   removeArticle(article: SavedArticleDto) {
-    if (confirm(`Remove "${article.title}" from your saved articles?`)) {
+    // Show confirmation modal
+    this.articleToDelete = article;
+    this.showDeleteArticleModal = true;
+  }
+
+  confirmDeleteArticle() {
+    if (!this.articleToDelete) return;
+
+    const article = this.articleToDelete;
+    
+    // If the article has a readingListId, remove from that specific list
+    if (article.readingListId) {
+      const listName = this.readingLists.find(l => l.id === article.readingListId)?.name || 'this list';
+      
+      this.readingListService.unsaveArticleFromList(article.url, article.readingListId).subscribe({
+        next: () => {
+          this.savedArticles = this.savedArticles.filter(a => a.id !== article.id);
+          this.loadReadingLists(); // Refresh to update counts
+          this.loadStats();
+          this.showSuccess(`Article removed from "${listName}"!`);
+          this.cancelDeleteArticle();
+        },
+        error: (err: any) => {
+          console.error('Error removing from list:', err);
+          this.handleError('Failed to remove article', err);
+          this.cancelDeleteArticle();
+        }
+      });
+    } else {
+      // If no readingListId (shouldn't happen, but fallback to delete by ID)
       this.readingListService.unsaveArticle(article.id).subscribe({
         next: () => {
           this.savedArticles = this.savedArticles.filter(a => a.id !== article.id);
           this.loadReadingLists(); // Refresh to update counts
           this.loadStats();
           this.showSuccess('Article removed from your saved articles!');
+          this.cancelDeleteArticle();
         },
         error: (err: any) => {
+          console.error('Error removing article:', err);
           this.handleError('Failed to remove article', err);
+          this.cancelDeleteArticle();
         }
       });
     }
+  }
+
+  cancelDeleteArticle() {
+    this.showDeleteArticleModal = false;
+    this.articleToDelete = null;
+  }
+
+  getListName(listId: string | undefined): string {
+    if (!listId) return 'your saved articles';
+    return this.readingLists.find(l => l.id === listId)?.name || 'this list';
   }
 
   viewListArticles(list: ReadingListDto) {
