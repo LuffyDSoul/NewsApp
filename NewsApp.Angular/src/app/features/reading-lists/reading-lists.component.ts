@@ -226,6 +226,19 @@ import {
         </div>
       </div>
 
+      <!-- Duplicate Name Error Modal -->
+      <div class="modal error-modal" *ngIf="showDuplicateNameModal" (click)="closeDuplicateNameModal()">
+        <div class="modal-content error-confirm" (click)="$event.stopPropagation()">
+          <h3>⚠️ Error: Duplicate Name</h3>
+          <p class="error-message">{{ duplicateNameMessage }}</p>
+          <div class="modal-actions">
+            <button (click)="returnToForm()" class="change-name-btn">
+              ✏️ Change Name
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Success/Error notifications -->
       <div class="notification success" *ngIf="showSuccessNotification">
         <span>{{ successMessage }}</span>
@@ -747,6 +760,42 @@ import {
       transform: translateY(-1px);
     }
 
+    .error-modal .modal-content {
+      max-width: 500px;
+    }
+
+    .error-confirm {
+      text-align: center;
+    }
+
+    .error-message {
+      font-size: 16px;
+      margin: 20px 0;
+      color: #721c24;
+      line-height: 1.6;
+      background: #f8d7da;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #f5c6cb;
+    }
+
+    .change-name-btn {
+      background: #007bff;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .change-name-btn:hover {
+      background: #0056b3;
+      transform: translateY(-1px);
+    }
+
     .loading {
       text-align: center;
       padding: 60px 20px;
@@ -825,9 +874,11 @@ export class ReadingListsComponent implements OnInit {
   showCreateModal = false;
   showEditModal = false;
   showDeleteModal = false;
+  showDuplicateNameModal = false;
   editingList: ReadingListDto | null = null;
   listToDelete: ReadingListDto | null = null;
   deleteMessage = '';
+  duplicateNameMessage = '';
   formData = {
     name: '',
     description: '',
@@ -1029,8 +1080,7 @@ export class ReadingListsComponent implements OnInit {
           this.showSuccess(`Reading list "${updatedList.name}" updated!`);
         },
         error: (err: any) => {
-          this.handleError('Failed to update reading list', err);
-          this.saving = false;
+          this.handleSaveError(err);
         }
       });
     } else {
@@ -1049,11 +1099,45 @@ export class ReadingListsComponent implements OnInit {
           this.showSuccess(`Reading list "${newList.name}" created!`);
         },
         error: (err: any) => {
-          this.handleError('Failed to create reading list', err);
-          this.saving = false;
+          this.handleSaveError(err);
         }
       });
     }
+  }
+
+  handleSaveError(err: any) {
+    console.error('Save error:', err);
+    const errorMessage = err.error?.error?.message || err.error?.message || err.message || '';
+    
+    // Check if it's a duplicate name error
+    if (errorMessage.includes('already have a reading list named') || 
+        errorMessage.includes('already have a list with this name')) {
+      this.showCreateModal = false;
+      this.showEditModal = false;
+      this.duplicateNameMessage = `Ya existe una lista con el nombre "${this.formData.name}". Por favor, elija un nombre distinto para poder crear su nueva lista.`;
+      this.showDuplicateNameModal = true;
+      this.saving = false;
+    } else {
+      this.handleError('Failed to save reading list', err);
+      this.saving = false;
+    }
+  }
+
+  returnToForm() {
+    this.showDuplicateNameModal = false;
+    if (this.editingList) {
+      this.showEditModal = true;
+    } else {
+      this.showCreateModal = true;
+    }
+  }
+
+  closeDuplicateNameModal() {
+    this.showDuplicateNameModal = false;
+    this.duplicateNameMessage = '';
+    this.formData = { name: '', description: '', isPublic: false, color: '' };
+    this.editingList = null;
+    this.saving = false;
   }
 
   closeModal(event?: any) {
