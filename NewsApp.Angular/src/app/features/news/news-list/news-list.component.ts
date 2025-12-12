@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NewsService } from '../../../core/services/news.service';
 import { ReadingListService } from '../../../core/services/reading-list.service';
+import { UserProfileService } from '../../../core/services/user-profile.service';
 import { NewsArticleDto } from '../../../shared/models/news.model';
 import { ReadingListDto, SaveArticleDto, SavedArticleDto, CreateReadingListDto } from '../../../shared/models/reading-list.model';
 
@@ -18,7 +19,7 @@ import { ReadingListDto, SaveArticleDto, SavedArticleDto, CreateReadingListDto }
         
         <!-- Reading Lists Quick Access -->
         <div class="reading-lists-section" *ngIf="readingLists.length > 0">
-          <h4>📚 My Reading Lists</h4>
+          <h4>My Reading Lists</h4>
           <div class="reading-lists-bar">
             <div class="reading-list-item" 
                  *ngFor="let list of readingLists" 
@@ -94,13 +95,20 @@ import { ReadingListDto, SaveArticleDto, SavedArticleDto, CreateReadingListDto }
                   (click)="openSaveToListsModal(article)"
                   class="save-to-lists-btn"
                   [disabled]="savingArticles.has(article.url)">
-                  📋 {{ isArticleSaved(article.url) ? 'Manage Lists' : 'Save to List(s)' }}
+                  {{ isArticleSaved(article.url) ? 'Manage Lists' : 'Save to List(s)' }}
                 </button>
               </div>
               <span class="author" *ngIf="article.author">By {{ article.author }}</span>
             </div>
           </div>
         </div>
+      </div>
+      
+      <!-- Load More Button -->
+      <div class="load-more-section" *ngIf="!loading && articles.length > 0 && hasMoreNews">
+        <button (click)="loadMoreNews()" class="load-more-btn" [disabled]="loadingMore">
+          {{ loadingMore ? 'Loading...' : 'Load More News' }}
+        </button>
       </div>
       
       <div class="no-results" *ngIf="!loading && articles.length === 0 && !error">
@@ -662,6 +670,32 @@ import { ReadingListDto, SaveArticleDto, SavedArticleDto, CreateReadingListDto }
       100% { transform: rotate(360deg); }
     }
     
+    .load-more-section {
+      text-align: center;
+      padding: 30px 20px;
+    }
+    
+    .load-more-btn {
+      padding: 12px 40px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      transition: background 0.2s ease;
+    }
+    
+    .load-more-btn:hover:not(:disabled) {
+      background: #0056b3;
+    }
+    
+    .load-more-btn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+    
     .news-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -805,6 +839,13 @@ export class NewsListComponent implements OnInit {
   selectedCategory = '';
   connectionTested = false;
   connectionStatus = false;
+  userLanguage = 'en'; // Default to English, will be updated from user profile
+  
+  // Pagination properties
+  currentPage = 1;
+  pageSize = 10;
+  hasMoreNews = true;
+  loadingMore = false;
 
   // Reading list properties
   readingLists: ReadingListDto[] = [];
@@ -830,13 +871,35 @@ export class NewsListComponent implements OnInit {
   constructor(
     private newsService: NewsService,
     private readingListService: ReadingListService,
+    private userProfileService: UserProfileService,
     private router: Router
   ) {}
 
   ngOnInit() {
-    this.loadLatestNews();
     this.loadReadingLists();
     this.loadSavedArticles();
+    this.loadUserLanguage();
+  }
+
+  loadUserLanguage() {
+    this.userProfileService.getMyProfile().subscribe({
+      next: (profile) => {
+        this.userLanguage = profile.newsLanguageCode || 'en';
+        console.log('User preferred language:', this.userLanguage);
+        // Load news with correct language
+        if (this.selectedCategory) {
+          this.loadByCategory();
+        } else {
+          this.loadLatestNews();
+        }
+      },
+      error: (err) => {
+        console.error('Error loading user language preference:', err);
+        this.userLanguage = 'en'; // Fallback to English
+        // Still load news even if profile fails
+        this.loadLatestNews();
+      }
+    });
   }
 
   loadReadingLists() {
@@ -1013,11 +1076,15 @@ export class NewsListComponent implements OnInit {
   loadLatestNews() {
     this.loading = true;
     this.error = null;
+    this.currentPage = 1;
     
-    this.newsService.getLatestNews(20).subscribe({
-      next: (articles: NewsArticleDto[]) => {
-        this.articles = articles;
+    // Use getTopHeadlines without category for consistency with pagination
+    this.newsService.getTopHeadlines(undefined, undefined, this.userLanguage, this.currentPage, this.pageSize).subscribe({
+      next: (result: any) => {
+        this.articles = result.items;
+        this.hasMoreNews = result.items.length === this.pageSize;
         this.loading = false;
+        console.log('Loaded news:', result.items.length, 'hasMoreNews:', this.hasMoreNews);
       },
       error: (err: any) => {
         this.handleError(err);
@@ -1048,13 +1115,36 @@ export class NewsListComponent implements OnInit {
   loadByCategory() {
     this.loading = true;
     this.error = null;
+    this.currentPage = 1;
     
-    this.newsService.getTopHeadlines(this.selectedCategory, undefined, 'en', 1, 20).subscribe({
+    this.newsService.getTopHeadlines(this.selectedCategory, undefined, this.userLanguage, this.currentPage, this.pageSize).subscribe({
       next: (result: any) => {
         this.articles = result.items;
+        this.hasMoreNews = result.items.length === this.pageSize;
         this.loading = false;
+        console.log('Loaded category news:', result.items.length, 'hasMoreNews:', this.hasMoreNews);
       },
       error: (err: any) => {
+        this.handleError(err);
+      }
+    });
+  }
+
+  loadMoreNews() {
+    if (this.loadingMore || !this.hasMoreNews) return;
+    
+    this.loadingMore = true;
+    this.currentPage++;
+    
+    // Use getTopHeadlines for pagination, with or without category
+    this.newsService.getTopHeadlines(this.selectedCategory || undefined, undefined, this.userLanguage, this.currentPage, this.pageSize).subscribe({
+      next: (result: any) => {
+        this.articles = [...this.articles, ...result.items];
+        this.hasMoreNews = result.items.length === this.pageSize;
+        this.loadingMore = false;
+      },
+      error: (err: any) => {
+        this.loadingMore = false;
         this.handleError(err);
       }
     });

@@ -62,7 +62,8 @@ imports: [CommonModule, RouterOutlet, RouterModule, UserProfileModalComponent],
       <!-- User Profile Modal -->
       <app-user-profile-modal
         [isOpen]="showProfileModal"
-        (closeModal)="closeProfileModal()">
+        (closeModal)="closeProfileModal()"
+        (languageChanged)="onLanguageChanged($event)">
       </app-user-profile-modal>
     </div>
   `,
@@ -305,6 +306,13 @@ openProfileModal(): void {
 
 closeProfileModal(): void {
   this.showProfileModal = false;
+}
+
+onLanguageChanged(newLanguage: string): void {
+  console.log('Language changed to:', newLanguage);
+  // The news list component will reload automatically on init
+  // We could also use a service to broadcast this change if needed
+  window.location.reload();
 }
 
 logout(): void {

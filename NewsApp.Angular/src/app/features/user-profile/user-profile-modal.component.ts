@@ -575,6 +575,7 @@ import {
 export class UserProfileModalComponent implements OnInit, OnDestroy, OnChanges {
   @Input() isOpen = false;
   @Output() closeModal = new EventEmitter<void>();
+  @Output() languageChanged = new EventEmitter<string>();
 
   activeTab: 'profile' | 'password' | 'preferences' = 'profile';
   userProfile: UserProfile | null = null;
@@ -824,6 +825,8 @@ export class UserProfileModalComponent implements OnInit, OnDestroy, OnChanges {
                 this.userProfile.newsLanguageName = selectedLanguage.name;
               }
             }
+            // Emit event to notify that language changed
+            this.languageChanged.emit(languageCode);
           } else {
             this.showError(result.message);
           }

@@ -208,23 +208,16 @@ namespace NewsApp.UserProfile
             // Return supported languages based on your NewsApp domain configuration
             var languages = new List<NewsLanguageDto>
             {
-                new() { Code = "ar", Name = "???????", IsSupported = true },
-                new() { Code = "en", Name = "English", IsSupported = true },
-                new() { Code = "es", Name = "Español", IsSupported = true },
-                new() { Code = "fr", Name = "Français", IsSupported = true },
                 new() { Code = "de", Name = "Deutsch", IsSupported = true },
+                new() { Code = "en", Name = "English", IsSupported = true },
+                new() { Code = "es", Name = "EspaÃ±ol", IsSupported = true },
+                new() { Code = "fr", Name = "FranÃ§ais", IsSupported = true },
+                new() { Code = "he", Name = "Hebrew", IsSupported = true },
                 new() { Code = "it", Name = "Italiano", IsSupported = true },
-                new() { Code = "pt", Name = "Português", IsSupported = true },
-                new() { Code = "ru", Name = "???????", IsSupported = true },
-                new() { Code = "zh", Name = "??", IsSupported = true },
-                new() { Code = "ja", Name = "???", IsSupported = true },
-                new() { Code = "ko", Name = "???", IsSupported = true },
-                new() { Code = "hi", Name = "??????", IsSupported = true },
-                new() { Code = "tr", Name = "Türkçe", IsSupported = true },
                 new() { Code = "nl", Name = "Nederlands", IsSupported = true },
-                new() { Code = "sv", Name = "Svenska", IsSupported = true },
                 new() { Code = "no", Name = "Norsk", IsSupported = true },
-                new() { Code = "da", Name = "Dansk", IsSupported = true }
+                new() { Code = "pt", Name = "PortuguÃªs", IsSupported = true },
+                new() { Code = "sv", Name = "Svenska", IsSupported = true }
             };
             
             return Task.FromResult(languages);

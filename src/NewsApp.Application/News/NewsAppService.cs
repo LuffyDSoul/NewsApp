@@ -42,61 +42,30 @@ namespace NewsApp.News
             string? country = null,
             string language = "en",
             int page = 1,
-            int pageSize = 20)
+            int pageSize = 10)
         {
             var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
             
-            var headlinesRequest = new TopHeadlinesRequest
-            {
-                Language = Languages.EN,
-                Page = page,
-                PageSize = pageSize
-            };
-
-            // Add category if provided
+            // Limit page size to prevent crashes
+            pageSize = Math.Min(pageSize, 10);
+            
+            // Build query based on category or use generic term
+            string query = "news";
             if (!string.IsNullOrEmpty(category))
             {
-                switch (category.ToLower())
-                {
-                    case "business":
-                        headlinesRequest.Category = Categories.Business;
-                        break;
-                    case "entertainment":
-                        headlinesRequest.Category = Categories.Entertainment;
-                        break;
-                    case "health":
-                        headlinesRequest.Category = Categories.Health;
-                        break;
-                    case "science":
-                        headlinesRequest.Category = Categories.Science;
-                        break;
-                    case "sports":
-                        headlinesRequest.Category = Categories.Sports;
-                        break;
-                    case "technology":
-                        headlinesRequest.Category = Categories.Technology;
-                        break;
-                }
+                query = category;
             }
-
-            // Add country if provided
-            if (!string.IsNullOrEmpty(country))
+            
+            var everythingRequest = new EverythingRequest
             {
-                switch (country.ToUpper())
-                {
-                    case "US":
-                        headlinesRequest.Country = Countries.US;
-                        break;
-                    case "GB":
-                        headlinesRequest.Country = Countries.GB;
-                        break;
-                    case "AR":
-                        headlinesRequest.Country = Countries.AR;
-                        break;
-                }
-            }
+                Q = query,
+                Language = GetLanguageFromCode(language),
+                Page = page,
+                PageSize = pageSize,
+                SortBy = SortBys.PublishedAt
+            };
 
-            var headlines = await newsApiClient.GetTopHeadlinesAsync(headlinesRequest);
+            var headlines = await newsApiClient.GetEverythingAsync(everythingRequest);
 
             var articles = new List<NewsArticleDto>();
             
@@ -144,14 +113,17 @@ namespace NewsApp.News
             string sources,
             string language = "en",
             int page = 1,
-            int pageSize = 20)
+            int pageSize = 10)
         {
             var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            
+            // Limit page size to prevent crashes
+            pageSize = Math.Min(pageSize, 10);
             
             var articles = await newsApiClient.GetEverythingAsync(new EverythingRequest
             {
                 Sources = sources.Split(',').Select(s => s.Trim()).ToList(),
-                Language = Languages.EN,
+                Language = GetLanguageFromCode(language),
                 Page = page,
                 PageSize = pageSize
             });
@@ -187,7 +159,7 @@ namespace NewsApp.News
             var sampleRequest = new EverythingRequest
             {
                 Q = "news",
-                Language = Languages.EN,
+                Language = GetLanguageFromCode(language ?? "en"),
                 PageSize = 20
             };
 
@@ -223,10 +195,15 @@ namespace NewsApp.News
             // Para propósitos de prueba, usar la API en lugar del repositorio
             var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
             
-            var headlines = await newsApiClient.GetTopHeadlinesAsync(new TopHeadlinesRequest
+            // Limit count to prevent crashes
+            count = Math.Min(count, 10);
+            
+            var headlines = await newsApiClient.GetEverythingAsync(new EverythingRequest
             {
-                Language = Languages.EN,
-                PageSize = count
+                Q = "news",
+                Language = GetLanguageFromCode(languageCode ?? "en"),
+                PageSize = count,
+                SortBy = SortBys.PublishedAt
             });
 
             var articles = new List<NewsArticleDto>();
@@ -279,10 +256,13 @@ namespace NewsApp.News
             // Para propósitos de prueba, usar GetEverything con el source como query
             var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
             
+            // Limit max result count to prevent crashes
+            maxResultCount = Math.Min(maxResultCount, 10);
+            
             var articles = await newsApiClient.GetEverythingAsync(new EverythingRequest
             {
                 Q = source,
-                Language = Languages.EN,
+                Language = Languages.EN, // TODO: Add language parameter
                 PageSize = maxResultCount
             });
 
@@ -318,10 +298,13 @@ namespace NewsApp.News
             // Para propósitos de prueba, usar la API directamente
             var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
             
+            // Limit max result count to prevent crashes
+            maxResultCount = Math.Min(maxResultCount, 10);
+            
             var articles = await newsApiClient.GetEverythingAsync(new EverythingRequest
             {
                 Q = searchText,
-                Language = Languages.EN,
+                Language = GetLanguageFromCode(languageCode ?? "en"),
                 PageSize = maxResultCount
             });
 
@@ -371,6 +354,27 @@ namespace NewsApp.News
         {
             var legacyResult = await _newsService.GetNewsAsync(query);
             return ObjectMapper.Map<ICollection<ArticleDto>, ICollection<NewsDto>>(legacyResult);
+        }
+
+        /// <summary>
+        /// Converts language code to NewsAPI Language constant
+        /// </summary>
+        private Languages GetLanguageFromCode(string languageCode)
+        {
+            return languageCode?.ToLower() switch
+            {
+                "de" => Languages.DE,
+                "en" => Languages.EN,
+                "es" => Languages.ES,
+                "fr" => Languages.FR,
+                "he" => Languages.HE,
+                "it" => Languages.IT,
+                "nl" => Languages.NL,
+                "no" => Languages.NO,
+                "pt" => Languages.PT,
+                "sv" => Languages.SV,
+                _ => Languages.EN // Default to English
+            };
         }
     }
 }
