@@ -1,0 +1,125 @@
+<div class="notifications-wrapper">
+  <!-- Bell Icon Button -->
+  <button class="notification-bell" (click)="togglePanel()" [class.has-unread]="unreadCount > 0">
+    <i class="fas fa-bell"></i>
+    <span class="badge" *ngIf="unreadCount > 0">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+  </button>
+
+  <!-- Notifications Panel -->
+  <div class="notifications-panel" *ngIf="isOpen">
+    <div class="panel-header">
+      <div class="header-left">
+        <h3>
+          <i class="fas fa-bell"></i>
+          Notifications
+        </h3>
+        <span class="unread-count" *ngIf="unreadCount > 0">({{ unreadCount }} unread)</span>
+      </div>
+      <button class="close-btn" (click)="closePanel()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="panel-actions">
+      <button 
+        class="action-btn" 
+        (click)="toggleUnreadFilter()"
+        [class.active]="showUnreadOnly">
+        <i class="fas" [class.fa-eye]="!showUnreadOnly" [class.fa-eye-slash]="showUnreadOnly"></i>
+        {{ showUnreadOnly ? 'Show All' : 'Unread Only' }}
+      </button>
+      <button 
+        class="action-btn" 
+        (click)="markAllAsRead()"
+        [disabled]="unreadCount === 0">
+        <i class="fas fa-check-double"></i>
+        Mark All Read
+      </button>
+    </div>
+
+    <div class="notifications-list" *ngIf="!loading">
+      <div class="empty-state" *ngIf="notifications.length === 0">
+        <i class="fas fa-bell-slash"></i>
+        <p *ngIf="!showUnreadOnly">No notifications yet</p>
+        <p *ngIf="showUnreadOnly">No unread notifications</p>
+      </div>
+
+      <div 
+        class="notification-item" 
+        *ngFor="let notification of notifications"
+        [class.unread]="!notification.isRead"
+        (click)="viewNews(notification)">
+        
+        <div class="notification-icon">
+          <i class="fas" [ngClass]="getCategoryIcon(notification.category)"></i>
+        </div>
+
+        <div class="notification-content">
+          <div class="notification-header">
+            <h4>{{ notification.alertListName }}</h4>
+            <span class="time-ago">{{ getTimeAgo(notification.creationTime) }}</span>
+          </div>
+
+          <p class="notification-message">
+            <strong>{{ notification.newArticlesCount }}</strong> new 
+            <strong>{{ notification.category }}</strong> article{{ notification.newArticlesCount > 1 ? 's' : '' }}
+            found in <strong>{{ notification.languageCode.toUpperCase() }}</strong>
+          </p>
+
+          <div class="notification-meta">
+            <span class="language-badge">
+              <i class="fas fa-language"></i>
+              {{ notification.languageCode.toUpperCase() }}
+            </span>
+            <span class="category-badge">
+              {{ notification.category }}
+            </span>
+            <span class="email-status" *ngIf="notification.emailSent">
+              <i class="fas fa-envelope"></i>
+              Email sent
+            </span>
+          </div>
+        </div>
+
+        <div class="notification-actions">
+          <button 
+            *ngIf="!notification.isRead"
+            class="mark-read-btn"
+            (click)="markAsRead(notification, $event)"
+            title="Mark as read">
+            <i class="fas fa-check"></i>
+          </button>
+          <div *ngIf="notification.isRead" class="read-indicator" title="Read">
+            <i class="fas fa-check-circle"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Loading notifications...</p>
+    </div>
+
+    <div class="panel-footer">
+      <a routerLink="/news-alerts" (click)="closePanel()" class="manage-link">
+        <i class="fas fa-cog"></i>
+        Manage Alerts
+      </a>
+    </div>
+  </div>
+
+  <!-- Overlay to close panel when clicking outside -->
+  <div class="overlay" *ngIf="isOpen" (click)="closePanel()"></div>
+
+  <!-- Toast Notification -->
+  <div class="toast-notification" *ngIf="showToast">
+    <div class="toast-content">
+      <i class="fas fa-bell toast-icon"></i>
+      <span class="toast-message">{{ toastMessage }}</span>
+      <button class="toast-close" (click)="showToast = false">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+</div>

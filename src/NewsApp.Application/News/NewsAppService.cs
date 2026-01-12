@@ -301,9 +301,12 @@ namespace NewsApp.News
             // Limit max result count to prevent crashes
             maxResultCount = Math.Min(maxResultCount, 10);
             
+            // Build query with OR for multiple keywords
+            var query = BuildKeywordQuery(searchText);
+            
             var articles = await newsApiClient.GetEverythingAsync(new EverythingRequest
             {
-                Q = searchText,
+                Q = query,
                 Language = GetLanguageFromCode(languageCode ?? "en"),
                 PageSize = maxResultCount
             });
@@ -356,6 +359,50 @@ namespace NewsApp.News
             return ObjectMapper.Map<ICollection<ArticleDto>, ICollection<NewsDto>>(legacyResult);
         }
 
+        public async Task<PagedResultDto<NewsArticleDto>> GetNewsWithFilterAsync(
+            string query,
+            string language = "en",
+            int page = 1,
+            int pageSize = 20)
+        {
+            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            
+            // Limit page size
+            pageSize = Math.Min(pageSize, 20);
+            
+            var everythingRequest = new EverythingRequest
+            {
+                Q = query,
+                Language = GetLanguageFromCode(language),
+                Page = page,
+                PageSize = pageSize,
+                SortBy = SortBys.PublishedAt
+            };
+
+            var result = await newsApiClient.GetEverythingAsync(everythingRequest);
+
+            var articles = new List<NewsArticleDto>();
+            
+            if (result.Status == Statuses.Ok && result.Articles != null)
+            {
+                articles = result.Articles.Select(a => new NewsArticleDto
+                {
+                    Id = Guid.NewGuid(),
+                    Source = a.Source?.Name ?? "Unknown",
+                    Title = a.Title ?? "",
+                    Description = a.Description ?? "",
+                    Url = a.Url ?? "",
+                    UrlToImage = a.UrlToImage,
+                    PublishedAt = a.PublishedAt ?? DateTime.Now,
+                    Content = a.Content,
+                    Author = a.Author,
+                    LanguageCode = language
+                }).ToList();
+            }
+
+            return new PagedResultDto<NewsArticleDto>(articles.Count, articles);
+        }
+
         /// <summary>
         /// Converts language code to NewsAPI Language constant
         /// </summary>
@@ -375,6 +422,36 @@ namespace NewsApp.News
                 "sv" => Languages.SV,
                 _ => Languages.EN // Default to English
             };
+        }
+
+        /// <summary>
+        /// Builds keyword query with OR for multiple keywords separated by comma
+        /// </summary>
+        private string BuildKeywordQuery(string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                return "news";
+            }
+
+            // Split by comma and trim whitespace
+            var keywords = keyword.Split(',')
+                .Select(k => k.Trim())
+                .Where(k => !string.IsNullOrWhiteSpace(k))
+                .ToList();
+
+            if (keywords.Count == 0)
+            {
+                return "news";
+            }
+
+            if (keywords.Count == 1)
+            {
+                return keywords[0];
+            }
+
+            // Build query with OR: "keyword1 OR keyword2 OR keyword3"
+            return string.Join(" OR ", keywords);
         }
     }
 }

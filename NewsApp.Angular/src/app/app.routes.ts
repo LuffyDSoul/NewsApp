@@ -21,6 +21,11 @@ export const routes: Routes = [
     canActivate: [AuthGuard]  // Proteger ruta de noticias
   },
   {
+    path: 'alert-news',
+    loadComponent: () => import('./features/news/alert-news/alert-news.component').then(m => m.AlertNewsComponent),
+    canActivate: [AuthGuard]  // Proteger ruta de noticias de alertas
+  },
+  {
     path: 'reading-lists',
     loadComponent: () => import('./features/reading-lists/reading-lists.component').then(m => m.ReadingListsComponent),
     canActivate: [AuthGuard]  // Proteger ruta de listas de lectura
@@ -29,6 +34,11 @@ export const routes: Routes = [
     path: 'profile',
     loadComponent: () => import('./features/user-profile/user-profile.component').then(m => m.UserProfileComponent),
     canActivate: [AuthGuard]  // Proteger ruta de perfil
+  },
+  {
+    path: 'news-alerts',
+    loadComponent: () => import('./features/news-alerts/alert-list-management/alert-list-management.component').then(m => m.AlertListManagementComponent),
+    canActivate: [AuthGuard]  // Proteger ruta de alertas
   },
   {
     path: '**',

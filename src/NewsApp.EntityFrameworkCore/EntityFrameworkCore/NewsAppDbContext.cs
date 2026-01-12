@@ -2,6 +2,7 @@
 using NewsApp.Themes;
 using NewsApp.ReadingLists;
 using NewsApp.Domain.UserProfile;
+using NewsApp.Domain.NewsAlerts;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
 using Volo.Abp.Data;
@@ -64,6 +65,8 @@ public class NewsAppDbContext :
     public DbSet<ReadingList> ReadingLists { get; set; }
     public DbSet<SavedArticle> SavedArticles { get; set; }
     public DbSet<UserPreferences> UserPreferences { get; set; }
+    public DbSet<NewsAlertList> NewsAlertLists { get; set; }
+    public DbSet<NewsAlertNotification> NewsAlertNotifications { get; set; }
 
     #endregion
 
@@ -173,6 +176,40 @@ public class NewsAppDbContext :
             
             // Index for user queries
             b.HasIndex(x => x.UserId).IsUnique();
+        });
+
+        // News Alert Lists
+        builder.Entity<NewsAlertList>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "NewsAlertLists", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            
+            b.Property(x => x.Name).IsRequired().HasMaxLength(256);
+            b.Property(x => x.Description).HasMaxLength(1024);
+            b.Property(x => x.Categories).IsRequired().HasMaxLength(512);
+            b.Property(x => x.LanguageCode).IsRequired().HasMaxLength(5);
+            
+            // Indexes for performance
+            b.HasIndex(x => x.UserId);
+            b.HasIndex(x => x.IsActive);
+            b.HasIndex(x => new { x.UserId, x.Name }).IsUnique();
+        });
+
+        // News Alert Notifications
+        builder.Entity<NewsAlertNotification>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "NewsAlertNotifications", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            
+            b.Property(x => x.AlertListName).IsRequired().HasMaxLength(256);
+            b.Property(x => x.Category).IsRequired().HasMaxLength(50);
+            b.Property(x => x.LanguageCode).IsRequired().HasMaxLength(5);
+            
+            // Indexes for performance
+            b.HasIndex(x => x.UserId);
+            b.HasIndex(x => x.NewsAlertListId);
+            b.HasIndex(x => x.IsRead);
+            b.HasIndex(x => x.CreationTime);
         });
     }
 }

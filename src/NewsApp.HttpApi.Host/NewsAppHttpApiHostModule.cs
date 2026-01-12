@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NewsApp.EntityFrameworkCore;
 using NewsApp.MultiTenancy;
+using NewsApp.NewsAlerts.BackgroundWorkers;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite.Bundling;
 using Microsoft.OpenApi.Models;
@@ -69,6 +70,9 @@ public class NewsAppHttpApiHostModule : AbpModule
         ConfigureVirtualFileSystem(context);
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
+        
+        // Register News Alert Background Service
+        context.Services.AddHostedService<NewsAlertBackgroundService>();
     }
 
     private void ConfigureAuthentication(ServiceConfigurationContext context)
@@ -130,7 +134,7 @@ public class NewsAppHttpApiHostModule : AbpModule
     {
         Configure<AbpAspNetCoreMvcOptions>(options =>
         {
-            // Configuración general para otros servicios (excluyendo News)
+            // Configuraciï¿½n general para otros servicios (excluyendo News)
             options.ConventionalControllers.Create(typeof(NewsAppApplicationModule).Assembly, opts =>
             {
                 opts.RootPath = "api/app";
@@ -141,7 +145,7 @@ public class NewsAppHttpApiHostModule : AbpModule
                     type.Name.EndsWith("AppService");
             });
             
-            // Comentamos temporalmente la configuración de News para usar controller manual
+            // Comentamos temporalmente la configuraciï¿½n de News para usar controller manual
             // options.ConventionalControllers.Create(typeof(NewsAppApplicationModule).Assembly, opts =>
             // {
             //     opts.RootPath = "api/news";

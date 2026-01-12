@@ -7,12 +7,14 @@ using NewsApp.UserProfile;
 using NewsApp.Lists;
 using NewsApp.Alerts;
 using NewsApp.Monitoring;
+using NewsApp.NewsAlerts;
 using NewsApp.Domain.News;
 using NewsApp.Domain.Lists;
 using NewsApp.Domain.Alerts;
 using NewsApp.Domain.Monitoring;
 using NewsApp.Domain.News.Services;
 using NewsApp.Domain.UserProfile;
+using NewsApp.Domain.NewsAlerts;
 using Volo.Abp.Identity;
 
 namespace NewsApp;
@@ -111,5 +113,9 @@ public class NewsAppApplicationAutoMapperProfile : Profile
             .ForMember(dest => dest.EmailConfirmed, opt => opt.Ignore())
             .ForMember(dest => dest.PhoneNumberConfirmed, opt => opt.Ignore())
             .ForMember(dest => dest.TwoFactorEnabled, opt => opt.Ignore());
+
+        // News Alerts mappings
+        CreateMap<NewsAlertList, NewsAlertListDto>();
+        CreateMap<NewsAlertNotification, NewsAlertNotificationDto>();
     }
 }

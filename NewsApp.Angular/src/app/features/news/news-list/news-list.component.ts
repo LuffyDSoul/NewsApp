@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { NewsService } from '../../../core/services/news.service';
 import { ReadingListService } from '../../../core/services/reading-list.service';
 import { UserProfileService } from '../../../core/services/user-profile.service';
@@ -872,13 +872,38 @@ export class NewsListComponent implements OnInit {
     private newsService: NewsService,
     private readingListService: ReadingListService,
     private userProfileService: UserProfileService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
     this.loadReadingLists();
     this.loadSavedArticles();
-    this.loadUserLanguage();
+    
+    // Check for query params from alert navigation
+    this.route.queryParams.subscribe(params => {
+      if (params['category']) {
+        this.selectedCategory = params['category'];
+      }
+      if (params['keyword']) {
+        this.searchQuery = params['keyword'];
+      }
+      if (params['language']) {
+        this.userLanguage = params['language'];
+        // Load news with the specified filters
+        if (this.searchQuery) {
+          // If keyword is present, search by keyword
+          this.searchNews();
+        } else if (this.selectedCategory) {
+          this.loadByCategory();
+        } else {
+          this.loadLatestNews();
+        }
+      } else {
+        // Load user's default language preference
+        this.loadUserLanguage();
+      }
+    });
   }
 
   loadUserLanguage() {

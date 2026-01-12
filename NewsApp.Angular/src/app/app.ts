@@ -4,11 +4,12 @@ import { RouterOutlet, RouterModule, Router } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { CurrentUser } from './shared/models/auth.model';
 import { UserProfileModalComponent } from './features/user-profile/user-profile-modal.component';
+import { NotificationsPanelComponent } from './features/news-alerts/notifications-panel/notifications-panel.component';
 
 @Component({
 selector: 'app-root',
 standalone: true,
-imports: [CommonModule, RouterOutlet, RouterModule, UserProfileModalComponent],
+imports: [CommonModule, RouterOutlet, RouterModule, UserProfileModalComponent, NotificationsPanelComponent],
   template: `
     <div class="app-container">
       <header class="app-header">
@@ -19,9 +20,13 @@ imports: [CommonModule, RouterOutlet, RouterModule, UserProfileModalComponent],
         <nav class="header-nav">
           <a routerLink="/news" routerLinkActive="active" *ngIf="currentUser.isAuthenticated">Latest News</a>
           <a routerLink="/reading-lists" routerLinkActive="active" *ngIf="currentUser.isAuthenticated">Reading Lists</a>
+          <a routerLink="/news-alerts" routerLinkActive="active" *ngIf="currentUser.isAuthenticated">My Alerts</a>
         </nav>
 
         <div class="header-user" *ngIf="currentUser.isAuthenticated; else loginSection">
+          <!-- Notifications Panel -->
+          <app-notifications-panel></app-notifications-panel>
+          
           <div class="user-menu">
             <div class="user-info" (click)="toggleUserDropdown()">
               <span class="welcome-text">Bienvenido, </span>
@@ -121,6 +126,9 @@ imports: [CommonModule, RouterOutlet, RouterModule, UserProfileModalComponent],
 
     .header-user {
       position: relative;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
     }
 
     .user-menu {

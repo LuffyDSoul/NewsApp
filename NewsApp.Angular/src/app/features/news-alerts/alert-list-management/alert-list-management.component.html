@@ -1,0 +1,184 @@
+<div class="alert-list-management">
+  <div class="header">
+    <h2>📰 My News Alerts</h2>
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      <i class="fas fa-plus"></i> Create New Alert
+    </button>
+  </div>
+
+  <div *ngIf="loading && alerts.length === 0" class="loading">
+    <div class="spinner"></div>
+    <p>Loading alerts...</p>
+  </div>
+
+  <div *ngIf="!loading && alerts.length === 0" class="empty-state">
+    <i class="fas fa-bell-slash"></i>
+    <h3>No alerts yet</h3>
+    <p>Create your first alert to start receiving notifications about news you care about.</p>
+    <button class="btn btn-primary" (click)="openCreateModal()">Create Alert</button>
+  </div>
+
+  <div class="alerts-grid" *ngIf="alerts.length > 0">
+    <div class="alert-card" *ngFor="let alert of alerts" [class.inactive]="!alert.isActive">
+      <div class="alert-header">
+        <div class="alert-title">
+          <h3>{{ alert.name }}</h3>
+          <span class="status-badge" [class.active]="alert.isActive" [class.inactive]="!alert.isActive">
+            {{ alert.isActive ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
+        <div class="alert-actions">
+          <button class="btn-icon" (click)="openEditModal(alert)" title="Edit">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn-icon" (click)="toggleAlertStatus(alert)" 
+                  [title]="alert.isActive ? 'Deactivate' : 'Activate'">
+            <i class="fas" [class.fa-pause]="alert.isActive" [class.fa-play]="!alert.isActive"></i>
+          </button>
+          <button class="btn-icon btn-danger" (click)="openDeleteModal(alert)" title="Delete">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+
+      <p class="alert-description" *ngIf="alert.description">{{ alert.description }}</p>
+
+      <div class="alert-info">
+        <div class="info-item">
+          <i class="fas fa-language"></i>
+          <span>{{ getLanguageName(alert.languageCode) }}</span>
+        </div>
+
+        <div class="info-item" *ngIf="alert.keyword">
+          <i class="fas fa-key"></i>
+          <span>Keyword: <strong>{{ alert.keyword }}</strong></span>
+        </div>
+
+        <div class="info-item" *ngIf="alert.lastCheckedAt">
+          <i class="fas fa-clock"></i>
+          <span>Last checked: {{ formatDate(alert.lastCheckedAt) }}</span>
+        </div>
+
+        <div class="info-item" *ngIf="alert.lastNewsFoundAt">
+          <i class="fas fa-newspaper"></i>
+          <span>Last news found: {{ formatDate(alert.lastNewsFoundAt) }}</span>
+        </div>
+      </div>
+
+      <div class="alert-actions-footer">
+        <button class="btn btn-view-news" (click)="viewAlertNews(alert)">
+          <i class="fas fa-newspaper"></i>
+          View News
+          <span class="notification-badge" *ngIf="alertNotificationCounts[alert.id] > 0">
+            {{ alertNotificationCounts[alert.id] }}
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ editMode ? 'Edit Alert' : 'Create New Alert' }}</h3>
+      <button class="close-btn" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="alertName">Alert Name *</label>
+        <input 
+          id="alertName"
+          type="text" 
+          [(ngModel)]="currentAlert.name" 
+          placeholder="e.g., Tech News"
+          maxlength="256"
+          class="form-control">
+      </div>
+
+      <div class="form-group">
+        <label for="alertDescription">Description</label>
+        <textarea 
+          id="alertDescription"
+          [(ngModel)]="currentAlert.description" 
+          placeholder="Optional description"
+          maxlength="1024"
+          rows="3"
+          class="form-control"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="alertLanguage">Language *</label>
+        <select 
+          id="alertLanguage"
+          [(ngModel)]="currentAlert.languageCode" 
+          class="form-control">
+          <option *ngFor="let lang of availableLanguages" [value]="lang.code">
+            {{ lang.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="alertKeyword">Keywords *</label>
+        <input 
+          id="alertKeyword"
+          type="text" 
+          [(ngModel)]="currentAlert.keyword" 
+          placeholder="e.g., AI, Artificial Intelligence, Machine Learning"
+          maxlength="256"
+          class="form-control"
+          required>
+        <small class="form-text">Enter one or multiple keywords separated by commas. Multiple keywords will search with OR logic.</small>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="currentAlert.isActive">
+          <span>Active (receive notifications)</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()" [disabled]="loading">
+        Cancel
+      </button>
+      <button class="btn btn-primary" (click)="saveAlert()" [disabled]="loading">
+        <span *ngIf="!loading">{{ editMode ? 'Update' : 'Create' }}</span>
+        <span *ngIf="loading">Saving...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+  <div class="modal-content modal-small" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Confirm Delete</h3>
+      <button class="close-btn" (click)="closeDeleteModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <p>Are you sure you want to delete the alert "<strong>{{ deletingAlertName }}</strong>"?</p>
+      <p class="warning-text">This action cannot be undone.</p>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeDeleteModal()" [disabled]="loading">
+        Cancel
+      </button>
+      <button class="btn btn-danger" (click)="confirmDelete()" [disabled]="loading">
+        <span *ngIf="!loading">Delete</span>
+        <span *ngIf="loading">Deleting...</span>
+      </button>
+    </div>
+  </div>
+</div>
