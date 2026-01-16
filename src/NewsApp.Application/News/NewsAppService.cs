@@ -315,19 +315,23 @@ namespace NewsApp.News
             
             if (articles.Status == Statuses.Ok && articles.Articles != null)
             {
-                result = articles.Articles.Skip(skipCount).Take(maxResultCount).Select(a => new NewsArticleDto
-                {
-                    Id = Guid.NewGuid(),
-                    Source = a.Source?.Name ?? "Unknown",
-                    Title = a.Title ?? "",
-                    Description = a.Description ?? "",
-                    Url = a.Url ?? "",
-                    UrlToImage = a.UrlToImage,
-                    PublishedAt = a.PublishedAt ?? DateTime.Now,
-                    Content = a.Content,
-                    Author = a.Author,
-                    LanguageCode = languageCode ?? "en"
-                }).ToList();
+                result = articles.Articles
+                    .OrderByDescending(a => a.PublishedAt ?? DateTime.MinValue)
+                    .Skip(skipCount)
+                    .Take(maxResultCount)
+                    .Select(a => new NewsArticleDto
+                    {
+                        Id = Guid.NewGuid(),
+                        Source = a.Source?.Name ?? "Unknown",
+                        Title = a.Title ?? "",
+                        Description = a.Description ?? "",
+                        Url = a.Url ?? "",
+                        UrlToImage = a.UrlToImage,
+                        PublishedAt = a.PublishedAt ?? DateTime.Now,
+                        Content = a.Content,
+                        Author = a.Author,
+                        LanguageCode = languageCode ?? "en"
+                    }).ToList();
             }
 
             return new PagedResultDto<NewsArticleDto>(result.Count, result);

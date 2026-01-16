@@ -24,6 +24,9 @@ export class NotificationsPanelComponent implements OnInit, OnDestroy {
 
   private refreshSubscription?: Subscription;
   private previousUnreadCount = 0;
+  private apiCallCount = 0;
+  private readonly MAX_API_CALLS = 5;
+  private notificationRefreshSubscription?: Subscription;
 
   constructor(
     private newsAlertService: NewsAlertService,
@@ -34,8 +37,8 @@ export class NotificationsPanelComponent implements OnInit, OnDestroy {
     this.loadNotifications();
     this.loadUnreadCount();
     
-    // Refresh unread count every 2 minutes and show toast for new notifications
-    this.refreshSubscription = interval(120000)
+    // Refresh unread count every 10 minutes and show toast for new notifications
+    this.refreshSubscription = interval(600000)
       .pipe(switchMap(() => this.newsAlertService.getUnreadCount()))
       .subscribe(count => {
         // Check if there are new notifications
@@ -50,10 +53,18 @@ export class NotificationsPanelComponent implements OnInit, OnDestroy {
           this.loadNotifications();
         }
       });
+    
+    // Subscribe to manual refresh events
+    this.notificationRefreshSubscription = this.newsAlertService.onNotificationsRefresh.subscribe(() => {
+      console.log('Notification refresh triggered');
+      this.loadNotifications();
+      this.loadUnreadCount();
+    });
   }
 
   ngOnDestroy(): void {
     this.refreshSubscription?.unsubscribe();
+    this.notificationRefreshSubscription?.unsubscribe();
   }
 
   togglePanel(): void {
@@ -67,8 +78,19 @@ export class NotificationsPanelComponent implements OnInit, OnDestroy {
     this.isOpen = false;
   }
 
+  goToManageAlerts(): void {
+    this.closePanel();
+    this.router.navigate(['/news-alerts']);
+  }
+
   loadNotifications(): void {
+    if (this.apiCallCount >= this.MAX_API_CALLS) {
+      console.warn('Límite de llamadas API alcanzado');
+      return;
+    }
+    
     this.loading = true;
+    this.apiCallCount++;
     this.newsAlertService.getMyNotifications(this.showUnreadOnly).subscribe({
       next: (notifications) => {
         this.notifications = notifications;
@@ -82,6 +104,12 @@ export class NotificationsPanelComponent implements OnInit, OnDestroy {
   }
 
   loadUnreadCount(): void {
+    if (this.apiCallCount >= this.MAX_API_CALLS) {
+      console.warn('Límite de llamadas API alcanzado');
+      return;
+    }
+    
+    this.apiCallCount++;
     this.newsAlertService.getUnreadCount().subscribe({
       next: (count) => {
         this.unreadCount = count;
@@ -104,7 +132,13 @@ export class NotificationsPanelComponent implements OnInit, OnDestroy {
     }
     
     if (notification.isRead) return;
+    
+    if (this.apiCallCount >= this.MAX_API_CALLS) {
+      console.warn('Límite de llamadas API alcanzado');
+      return;
+    }
 
+    this.apiCallCount++;
     this.newsAlertService.markAsRead(notification.id).subscribe({
       next: () => {
         notification.isRead = true;
@@ -118,10 +152,21 @@ export class NotificationsPanelComponent implements OnInit, OnDestroy {
 
   markAllAsRead(): void {
     if (this.unreadCount === 0) return;
+    
+    if (this.apiCallCount >= this.MAX_API_CALLS) {
+      console.warn('Límite de llamadas API alcanzado');
+      return;
+    }
 
+    this.apiCallCount++;
     this.newsAlertService.markAllAsRead().subscribe({
       next: () => {
-        this.notifications.forEach(n => n.isRead = true);
+        // Remove unread notifications from the list if showing unread only
+        if (this.showUnreadOnly) {
+          this.notifications = [];
+        } else {
+          this.notifications.forEach(n => n.isRead = true);
+        }
         this.unreadCount = 0;
       },
       error: (error) => {
@@ -136,12 +181,48 @@ export class NotificationsPanelComponent implements OnInit, OnDestroy {
       this.markAsRead(notification);
     }
 
-    // Navigate to news list with filters
+    // Navigate to news list to show this notification's articles
     this.closePanel();
-    this.router.navigate(['/news'], {
-      queryParams: {
-        category: notification.category,
-        language: notification.languageCode
+    
+    // First, get the alert configuration to know what to search for
+    if (this.apiCallCount >= this.MAX_API_CALLS) {
+      console.warn('Límite de llamadas API alcanzado');
+      this.router.navigate(['/news']);
+      return;
+    }
+    
+    this.apiCallCount++;
+    this.newsAlertService.getAlert(notification.newsAlertListId).subscribe({
+      next: (alert) => {
+        const queryParams: any = {
+          alertName: alert.name,
+          language: alert.languageCode,
+          fromNotification: 'true',
+          notificationId: notification.id,
+          articleCount: notification.newArticlesCount
+        };
+        
+        // Add keyword if present, otherwise add categories
+        if (alert.keyword && alert.keyword.trim()) {
+          queryParams.keyword = alert.keyword.trim();
+        } else if (alert.categories && alert.categories.trim()) {
+          queryParams.categories = alert.categories.trim();
+        }
+        
+        this.router.navigate(['/alert-news'], { queryParams });
+      },
+      error: (error) => {
+        console.error('Error loading alert:', error);
+        // Fallback: navigate with basic info
+        this.router.navigate(['/alert-news'], {
+          queryParams: {
+            category: notification.category,
+            language: notification.languageCode,
+            fromNotification: 'true',
+            notificationId: notification.id,
+            articleCount: notification.newArticlesCount
+          }
+        });
       }
     });
   }

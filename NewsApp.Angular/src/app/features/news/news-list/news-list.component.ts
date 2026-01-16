@@ -5,6 +5,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { NewsService } from '../../../core/services/news.service';
 import { ReadingListService } from '../../../core/services/reading-list.service';
 import { UserProfileService } from '../../../core/services/user-profile.service';
+import { NewsAlertService } from '../../../core/services/news-alert.service';
 import { NewsArticleDto } from '../../../shared/models/news.model';
 import { ReadingListDto, SaveArticleDto, SavedArticleDto, CreateReadingListDto } from '../../../shared/models/reading-list.model';
 
@@ -16,6 +17,17 @@ import { ReadingListDto, SaveArticleDto, SavedArticleDto, CreateReadingListDto }
     <div class="news-container">
       <div class="header-section">
         <h2>Latest News</h2>
+        
+        <!-- Alert Banner -->
+        <div class="alert-banner" *ngIf="showAlertBanner">
+          <div class="alert-banner-content">
+            <i class="fas fa-bell"></i>
+            <span>Showing news from alert: <strong>{{ alertName }}</strong></span>
+            <button (click)="closeAlertBanner()" class="close-banner-btn" title="Close">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
         
         <!-- Reading Lists Quick Access -->
         <div class="reading-lists-section" *ngIf="readingLists.length > 0">
@@ -215,6 +227,75 @@ import { ReadingListDto, SaveArticleDto, SavedArticleDto, CreateReadingListDto }
     .header-section h2 {
       color: #343a40;
       margin-bottom: 20px;
+    }
+
+    /* Alert Banner */
+    .alert-banner {
+      margin-bottom: 20px;
+      padding: 15px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .alert-banner-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: white;
+    }
+
+    .alert-banner-content i.fa-bell {
+      font-size: 1.2em;
+      animation: ring 2s ease-in-out infinite;
+    }
+
+    @keyframes ring {
+      0%, 100% { transform: rotate(0deg); }
+      10%, 30% { transform: rotate(-10deg); }
+      20%, 40% { transform: rotate(10deg); }
+      50% { transform: rotate(0deg); }
+    }
+
+    .alert-banner-content span {
+      flex: 1;
+      font-size: 1em;
+    }
+
+    .alert-banner-content strong {
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    .close-banner-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .close-banner-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
     }
 
     /* Reading Lists Section */
@@ -843,7 +924,7 @@ export class NewsListComponent implements OnInit {
   
   // Pagination properties
   currentPage = 1;
-  pageSize = 10;
+  pageSize = 5;
   hasMoreNews = true;
   loadingMore = false;
 
@@ -868,12 +949,25 @@ export class NewsListComponent implements OnInit {
   showSuccessNotification = false;
   successMessage = '';
 
+  // Alert filter
+  filterByAlertListId: string | null = null;
+  filterByArticleUrls: string[] = [];
+  notificationId: string | null = null;
+  showAlertBanner = false;
+  alertName = '';
+  selectedCategories: string[] = [];
+
+  // API call limiter
+  private apiCallCount = 0;
+  private readonly MAX_API_CALLS = 5;
+
   constructor(
     private newsService: NewsService,
     private readingListService: ReadingListService,
     private userProfileService: UserProfileService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private newsAlertService: NewsAlertService
   ) {}
 
   ngOnInit() {
@@ -882,6 +976,22 @@ export class NewsListComponent implements OnInit {
     
     // Check for query params from alert navigation
     this.route.queryParams.subscribe(params => {
+      // Clear previous state
+      this.filterByArticleUrls = [];
+      this.filterByAlertListId = null;
+      this.notificationId = null;
+      
+      if (params['fromNotification'] === 'true') {
+        // Coming from a notification - show banner
+        this.showAlertBanner = true;
+        this.alertName = params['alertName'] || 'Alert';
+      }
+      
+      if (params['categories']) {
+        // Multiple categories from alert
+        const categories = params['categories'].split(',').map((c: string) => c.trim()).filter((c: string) => c);
+        this.selectedCategories = categories;
+      }
       if (params['category']) {
         this.selectedCategory = params['category'];
       }
@@ -890,15 +1000,19 @@ export class NewsListComponent implements OnInit {
       }
       if (params['language']) {
         this.userLanguage = params['language'];
-        // Load news with the specified filters
-        if (this.searchQuery) {
-          // If keyword is present, search by keyword
-          this.searchNews();
-        } else if (this.selectedCategory) {
-          this.loadByCategory();
-        } else {
-          this.loadLatestNews();
-        }
+      }
+      
+      // Load news based on parameters
+      if (this.searchQuery) {
+        // If keyword is present, search by keyword
+        this.searchNews();
+      } else if (this.selectedCategories.length > 0) {
+        // Multiple categories
+        this.loadNewsForMultipleCategories(this.selectedCategories);
+      } else if (this.selectedCategory) {
+        this.loadByCategory();
+      } else if (params['language']) {
+        this.loadLatestNews();
       } else {
         // Load user's default language preference
         this.loadUserLanguage();
@@ -1099,9 +1213,16 @@ export class NewsListComponent implements OnInit {
   }
 
   loadLatestNews() {
+    if (this.apiCallCount >= this.MAX_API_CALLS) {
+      console.warn('Límite de llamadas API alcanzado');
+      this.error = 'Se ha alcanzado el límite de llamadas a la API';
+      return;
+    }
+    
     this.loading = true;
     this.error = null;
     this.currentPage = 1;
+    this.apiCallCount++;
     
     // Use getTopHeadlines without category for consistency with pagination
     this.newsService.getTopHeadlines(undefined, undefined, this.userLanguage, this.currentPage, this.pageSize).subscribe({
@@ -1123,10 +1244,17 @@ export class NewsListComponent implements OnInit {
       return;
     }
 
+    if (this.apiCallCount >= this.MAX_API_CALLS) {
+      console.warn('Límite de llamadas API alcanzado');
+      this.error = 'Se ha alcanzado el límite de llamadas a la API';
+      return;
+    }
+
     this.loading = true;
     this.error = null;
+    this.apiCallCount++;
     
-    this.newsService.searchLocalNews(this.searchQuery, undefined, 0, 20).subscribe({
+    this.newsService.searchLocalNews(this.searchQuery, undefined, 0, 5).subscribe({
       next: (result: any) => {
         this.articles = result.items;
         this.loading = false;
@@ -1138,9 +1266,16 @@ export class NewsListComponent implements OnInit {
   }
 
   loadByCategory() {
+    if (this.apiCallCount >= this.MAX_API_CALLS) {
+      console.warn('Límite de llamadas API alcanzado');
+      this.error = 'Se ha alcanzado el límite de llamadas a la API';
+      return;
+    }
+    
     this.loading = true;
     this.error = null;
     this.currentPage = 1;
+    this.apiCallCount++;
     
     this.newsService.getTopHeadlines(this.selectedCategory, undefined, this.userLanguage, this.currentPage, this.pageSize).subscribe({
       next: (result: any) => {
@@ -1155,11 +1290,118 @@ export class NewsListComponent implements OnInit {
     });
   }
 
+  loadNewsForAlert() {
+    if (!this.filterByAlertListId) {
+      this.loadLatestNews();
+      return;
+    }
+
+    this.loading = true;
+    this.error = null;
+    this.currentPage = 1;
+
+    // Get the alert configuration
+    this.newsAlertService.getAlert(this.filterByAlertListId).subscribe({
+      next: (alert) => {
+        // Check if alert has keyword or category
+        if (alert.keyword && alert.keyword.trim()) {
+          // Use keyword search
+          this.searchQuery = alert.keyword;
+          this.newsService.searchLocalNews(this.searchQuery, undefined, 0, 5).subscribe({
+            next: (result: any) => {
+              this.articles = result.items;
+              this.loading = false;
+            },
+            error: (err: any) => {
+              this.handleError(err);
+            }
+          });
+        } else if (alert.categories && alert.categories.trim()) {
+          // Use category filter - load news for ALL categories (OR logic)
+          const categories = alert.categories.split(',').map(c => c.trim()).filter(c => c);
+          if (categories.length > 0) {
+            // Load news for all categories combined
+            this.loadNewsForMultipleCategories(categories);
+          } else {
+            this.loadLatestNews();
+          }
+        } else {
+          this.loadLatestNews();
+        }
+      },
+      error: (err: any) => {
+        console.error('Error loading alert:', err);
+        this.handleError(err);
+      }
+    });
+  }
+
+  loadNewsForMultipleCategories(categories: string[]) {
+    // Check API call limit for each category
+    if (this.apiCallCount + categories.length > this.MAX_API_CALLS) {
+      console.warn('Límite de llamadas API alcanzado');
+      this.error = 'Se ha alcanzado el límite de llamadas a la API';
+      this.loading = false;
+      return;
+    }
+    
+    // Load news for multiple categories (OR logic)
+    // We'll load each category and combine the results
+    const categoryRequests = categories.map(category => {
+      this.apiCallCount++;
+      return this.newsService.getTopHeadlines(category, undefined, this.userLanguage, 1, this.pageSize);
+    });
+
+    // Use Promise.all to load all categories at once
+    Promise.all(categoryRequests.map(req => req.toPromise()))
+      .then(results => {
+        // Combine all articles from all categories
+        const allArticles: NewsArticleDto[] = [];
+        const seenUrls = new Set<string>();
+        
+        results.forEach((result, index) => {
+          console.log(`Category ${categories[index]} returned:`, result?.items?.length || 0, 'articles');
+          if (result && result.items && Array.isArray(result.items)) {
+            result.items.forEach((article: NewsArticleDto) => {
+              // Avoid duplicates
+              if (!seenUrls.has(article.url)) {
+                seenUrls.add(article.url);
+                allArticles.push(article);
+              }
+            });
+          }
+        });
+
+        // Sort by published date (newest first)
+        allArticles.sort((a, b) => {
+          const dateA = new Date(a.publishedAt).getTime();
+          const dateB = new Date(b.publishedAt).getTime();
+          return dateB - dateA;
+        });
+
+        this.articles = allArticles;
+        this.hasMoreNews = false; // Disable pagination for multi-category search
+        this.loading = false;
+        console.log(`Loaded news from ${categories.length} categories:`, allArticles.length, 'total articles');
+      })
+      .catch(err => {
+        console.error('Error in loadNewsForMultipleCategories:', err);
+        this.handleError(err);
+      });
+  }
+
   loadMoreNews() {
     if (this.loadingMore || !this.hasMoreNews) return;
     
+    if (this.apiCallCount >= this.MAX_API_CALLS) {
+      console.warn('Límite de llamadas API alcanzado');
+      this.hasMoreNews = false;
+      return;
+    }
+    
     this.loadingMore = true;
     this.currentPage++;
+    this.apiCallCount++;
     
     // Use getTopHeadlines for pagination, with or without category
     this.newsService.getTopHeadlines(this.selectedCategory || undefined, undefined, this.userLanguage, this.currentPage, this.pageSize).subscribe({
@@ -1358,5 +1600,10 @@ export class NewsListComponent implements OnInit {
     // Close the save modal and open the create modal
     this.closeSaveToListsModal();
     this.showCreateListModal = true;
+  }
+
+  closeAlertBanner() {
+    this.showAlertBanner = false;
+    this.alertName = '';
   }
 }

@@ -100,5 +100,15 @@ namespace NewsApp.Controllers
         {
             await _newsAlertAppService.MarkAllNotificationsAsReadAsync();
         }
+
+        /// <summary>
+        /// Trigger manual check of alerts (for testing)
+        /// </summary>
+        [HttpPost("check-now")]
+        public async Task<IActionResult> TriggerAlertCheckAsync()
+        {
+            var result = await _newsAlertAppService.TriggerManualCheckAsync();
+            return Ok(new { message = result });
+        }
     }
 }

@@ -1,9 +1,14 @@
 <div class="alert-list-management">
   <div class="header">
     <h2>📰 My News Alerts</h2>
-    <button class="btn btn-primary" (click)="openCreateModal()">
-      <i class="fas fa-plus"></i> Create New Alert
-    </button>
+    <div style="display: flex; gap: 0.5rem;">
+      <button class="btn btn-secondary" (click)="checkAlertsNow()" [disabled]="loading" title="Manually check alerts now">
+        <i class="fas fa-sync"></i> Check Alerts Now
+      </button>
+      <button class="btn btn-primary" (click)="openCreateModal()">
+        <i class="fas fa-plus"></i> Create New Alert
+      </button>
+    </div>
   </div>
 
   <div *ngIf="loading && alerts.length === 0" class="loading">
@@ -49,9 +54,20 @@
           <span>{{ getLanguageName(alert.languageCode) }}</span>
         </div>
 
+        <div class="info-item" *ngIf="alert.categories">
+          <i class="fas fa-folder"></i>
+          <span>
+            <span style="margin-right: 4px;">Categories:</span>
+            <strong style="display: inline;">{{ alert.categories }}</strong>
+          </span>
+        </div>
+
         <div class="info-item" *ngIf="alert.keyword">
           <i class="fas fa-key"></i>
-          <span>Keyword: <strong>{{ alert.keyword }}</strong></span>
+          <span>
+            <span style="margin-right: 4px;">Keywords:</span>
+            <strong style="display: inline;">{{ alert.keyword }}</strong>
+          </span>
         </div>
 
         <div class="info-item" *ngIf="alert.lastCheckedAt">
@@ -124,16 +140,32 @@
       </div>
 
       <div class="form-group">
-        <label for="alertKeyword">Keywords *</label>
+        <label>Categories</label>
+        <div class="categories-checkboxes">
+          <label *ngFor="let cat of availableCategories" class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [checked]="isCategorySelected(cat.value)"
+              [disabled]="areCategoriesDisabled()"
+              (change)="toggleCategory(cat.value, $event)">
+            <span>{{ cat.name }}</span>
+          </label>
+        </div>
+        <small class="form-text">✨ Select one or more categories (OR logic: you'll get alerts for ANY selected category). Cannot combine with keywords.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="alertKeyword">Keywords</label>
         <input 
           id="alertKeyword"
           type="text" 
-          [(ngModel)]="currentAlert.keyword" 
+          [(ngModel)]="currentAlert.keyword"
+          (input)="onKeywordInput()"
+          [disabled]="isKeywordDisabled()"
           placeholder="e.g., AI, Artificial Intelligence, Machine Learning"
           maxlength="256"
-          class="form-control"
-          required>
-        <small class="form-text">Enter one or multiple keywords separated by commas. Multiple keywords will search with OR logic.</small>
+          class="form-control">
+        <small class="form-text">✨ Enter keywords separated by commas (OR logic: articles matching ANY keyword). Cannot combine with categories.</small>
       </div>
 
       <div class="form-group">

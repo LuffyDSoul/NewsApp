@@ -39,43 +39,50 @@ namespace NewsApp.Domain.NewsAlerts
         /// Date of the newest article found
         /// </summary>
         public DateTime NewestArticleDate { get; set; }
+    
+    /// <summary>
+    /// Comma-separated list of article URLs that triggered this notification
+    /// </summary>
+    public string ArticleUrls { get; set; }
 
-        protected NewsAlertNotification()
-        {
-            // For EF Core
-        }
+    protected NewsAlertNotification()
+    {
+        // For EF Core
+    }
 
-        public NewsAlertNotification(
-            Guid id,
-            Guid userId,
-            Guid newsAlertListId,
-            string alertListName,
-            string category,
-            string languageCode,
-            int newArticlesCount,
-            DateTime newestArticleDate)
-            : base(id)
-        {
-            UserId = userId;
-            NewsAlertListId = newsAlertListId;
-            AlertListName = alertListName;
-            Category = category;
-            LanguageCode = languageCode;
-            NewArticlesCount = newArticlesCount;
-            NewestArticleDate = newestArticleDate;
-            IsRead = false;
-            EmailSent = false;
-        }
+    public NewsAlertNotification(
+        Guid id,
+        Guid userId,
+        Guid newsAlertListId,
+        string alertListName,
+        string category,
+        string languageCode,
+        int newArticlesCount,
+        DateTime newestArticleDate,
+        string articleUrls = "")
+        : base(id)
+    {
+        UserId = userId;
+        NewsAlertListId = newsAlertListId;
+        AlertListName = alertListName;
+        Category = category;
+        LanguageCode = languageCode;
+        NewArticlesCount = newArticlesCount;
+        NewestArticleDate = newestArticleDate;
+        ArticleUrls = articleUrls;
+        IsRead = false;
+        EmailSent = false;
+    }
 
-        public void MarkAsRead()
-        {
-            IsRead = true;
-        }
+    public void MarkAsRead()
+    {
+        IsRead = true;
+    }
 
-        public void MarkEmailSent()
-        {
-            EmailSent = true;
-            EmailSentAt = DateTime.UtcNow;
-        }
+    public void MarkEmailSent()
+    {
+        EmailSent = true;
+        EmailSentAt = DateTime.UtcNow;
+    }
     }
 }

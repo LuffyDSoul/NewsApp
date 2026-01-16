@@ -22,12 +22,18 @@ export class AlertNewsComponent implements OnInit {
   // Filter parameters from alert
   alertKeyword = '';
   alertCategory = '';
+  alertCategories: string[] = [];
   alertLanguage = 'en';
   alertName = '';
   
+  // Notification parameters
+  fromNotification = false;
+  notificationId: string | null = null;
+  expectedArticleCount = 0;
+  
   // Pagination
   currentPage = 1;
-  pageSize = 10;
+  pageSize = 5;
   hasMoreNews = true;
   loadingMore = false;
   
@@ -44,6 +50,10 @@ export class AlertNewsComponent implements OnInit {
   newListName = '';
   newListDescription = '';
   isCreatingList = false;
+
+  // API call limiter - 5 calls per keyword/category
+  private apiCallCounts: Map<string, number> = new Map();
+  private readonly MAX_API_CALLS_PER_FILTER = 5;
 
   constructor(
     private route: ActivatedRoute,
@@ -63,14 +73,34 @@ export class AlertNewsComponent implements OnInit {
       this.alertLanguage = params['language'] || 'en';
       this.alertName = params['alertName'] || 'Alert';
       
+      // Check if coming from notification
+      this.fromNotification = params['fromNotification'] === 'true';
+      this.notificationId = params['notificationId'] || null;
+      this.expectedArticleCount = parseInt(params['articleCount']) || 0;
+      
+      // Adjust pageSize if coming from notification to show exact number of articles
+      if (this.fromNotification && this.expectedArticleCount > 0) {
+        this.pageSize = this.expectedArticleCount;
+        console.log(`Coming from notification: expecting ${this.expectedArticleCount} articles`);
+      }
+      
+      // Handle multiple categories
+      if (params['categories']) {
+        this.alertCategories = params['categories'].split(',').map((c: string) => c.trim()).filter((c: string) => c);
+        console.log('Alert categories:', this.alertCategories);
+      } else if (this.alertCategory) {
+        this.alertCategories = [this.alertCategory];
+      }
+      
       // Load news with filters
       this.loadAlertNews();
     });
   }
 
   loadAlertNews(): void {
-    if (!this.alertKeyword) {
-      this.error = 'No keyword specified for this alert';
+    // Validate that we have either keyword or categories
+    if (!this.alertKeyword && this.alertCategories.length === 0) {
+      this.error = 'No search criteria specified for this alert';
       return;
     }
 
@@ -78,17 +108,117 @@ export class AlertNewsComponent implements OnInit {
     this.error = null;
     this.currentPage = 1;
     
-    // Use searchLocalNews which will search by keyword
-    this.newsService.searchLocalNews(this.alertKeyword, this.alertLanguage, 0, this.pageSize).subscribe({
-      next: (result: PagedResultDto<NewsArticleDto>) => {
-        this.articles = result.items || [];
-        this.hasMoreNews = result.items?.length >= this.pageSize;
+    // Use keyword search if available
+    if (this.alertKeyword) {
+      const filterKey = `keyword_${this.alertKeyword}`;
+      const currentCount = this.apiCallCounts.get(filterKey) || 0;
+      
+      if (currentCount >= this.MAX_API_CALLS_PER_FILTER) {
+        this.error = `Se ha alcanzado el límite de ${this.MAX_API_CALLS_PER_FILTER} llamadas para: ${this.alertKeyword}`;
         this.loading = false;
-      },
-      error: (err) => {
-        this.handleError(err);
+        return;
       }
+      
+      this.apiCallCounts.set(filterKey, currentCount + 1);
+      
+      this.newsService.searchLocalNews(this.alertKeyword, this.alertLanguage, 0, this.pageSize).subscribe({
+        next: (result: PagedResultDto<NewsArticleDto>) => {
+          this.articles = result.items || [];
+          this.hasMoreNews = result.items?.length >= this.pageSize;
+          this.loading = false;
+        },
+        error: (err) => {
+          this.handleError(err);
+        }
+      });
+    } else if (this.alertCategories.length > 1) {
+      // Multiple categories - load and combine
+      this.loadNewsForMultipleCategories();
+    } else if (this.alertCategories.length === 1) {
+      // Single category
+      const category = this.alertCategories[0];
+      const filterKey = `category_${category}`;
+      const currentCount = this.apiCallCounts.get(filterKey) || 0;
+      
+      if (currentCount >= this.MAX_API_CALLS_PER_FILTER) {
+        this.error = `Se ha alcanzado el límite de ${this.MAX_API_CALLS_PER_FILTER} llamadas para: ${category}`;
+        this.loading = false;
+        return;
+      }
+      
+      this.apiCallCounts.set(filterKey, currentCount + 1);
+      
+      this.newsService.getTopHeadlines(category, undefined, this.alertLanguage, 1, this.pageSize).subscribe({
+        next: (result: PagedResultDto<NewsArticleDto>) => {
+          this.articles = result.items || [];
+          this.hasMoreNews = result.items?.length >= this.pageSize;
+          this.loading = false;
+        },
+        error: (err) => {
+          this.handleError(err);
+        }
+      });
+    }
+  }
+
+  loadNewsForMultipleCategories(): void {
+    // Check API call limit for each category
+    for (const category of this.alertCategories) {
+      const filterKey = `category_${category}`;
+      const currentCount = this.apiCallCounts.get(filterKey) || 0;
+      
+      if (currentCount >= this.MAX_API_CALLS_PER_FILTER) {
+        this.error = `Se ha alcanzado el límite de ${this.MAX_API_CALLS_PER_FILTER} llamadas para: ${category}`;
+        this.loading = false;
+        return;
+      }
+    }
+    
+    // Load news for each category
+    const categoryRequests = this.alertCategories.map(category => {
+      const filterKey = `category_${category}`;
+      const currentCount = this.apiCallCounts.get(filterKey) || 0;
+      this.apiCallCounts.set(filterKey, currentCount + 1);
+      
+      return this.newsService.getTopHeadlines(category, undefined, this.alertLanguage, 1, this.pageSize);
     });
+
+    // Use Promise.all to load all categories at once
+    Promise.all(categoryRequests.map(req => req.toPromise()))
+      .then(results => {
+        // Combine all articles from all categories
+        const allArticles: NewsArticleDto[] = [];
+        const seenUrls = new Set<string>();
+        
+        results.forEach((result, index) => {
+          console.log(`Category ${this.alertCategories[index]} returned:`, result?.items?.length || 0, 'articles');
+          if (result && result.items && Array.isArray(result.items)) {
+            result.items.forEach((article: NewsArticleDto) => {
+              // Avoid duplicates
+              if (!seenUrls.has(article.url)) {
+                seenUrls.add(article.url);
+                allArticles.push(article);
+              }
+            });
+          }
+        });
+
+        // Sort by published date (newest first)
+        allArticles.sort((a, b) => {
+          const dateA = new Date(a.publishedAt).getTime();
+          const dateB = new Date(b.publishedAt).getTime();
+          return dateB - dateA;
+        });
+
+        this.articles = allArticles;
+        this.hasMoreNews = false; // Disable pagination for multi-category search
+        this.loading = false;
+        console.log(`Loaded news from ${this.alertCategories.length} categories:`, allArticles.length, 'total articles');
+      })
+      .catch(err => {
+        console.error('Error in loadNewsForMultipleCategories:', err);
+        this.handleError(err);
+      });
   }
 
   loadMoreNews(): void {
@@ -96,22 +226,51 @@ export class AlertNewsComponent implements OnInit {
       return;
     }
 
+    // Check API call limit
+    const filterKey = this.alertKeyword ? `keyword_${this.alertKeyword}` : `category_${this.alertCategory}`;
+    const currentCount = this.apiCallCounts.get(filterKey) || 0;
+    
+    if (currentCount >= this.MAX_API_CALLS_PER_FILTER) {
+      this.hasMoreNews = false;
+      return;
+    }
+    
+    // Increment call count
+    this.apiCallCounts.set(filterKey, currentCount + 1);
+
     this.loadingMore = true;
     const skipCount = this.currentPage * this.pageSize;
 
-    this.newsService.searchLocalNews(this.alertKeyword, this.alertLanguage, skipCount, this.pageSize).subscribe({
-      next: (result: PagedResultDto<NewsArticleDto>) => {
-        const newArticles = result.items || [];
-        this.articles = [...this.articles, ...newArticles];
-        this.currentPage++;
-        this.hasMoreNews = newArticles.length >= this.pageSize;
-        this.loadingMore = false;
-      },
-      error: (err) => {
-        console.error('Error loading more news:', err);
-        this.loadingMore = false;
-      }
-    });
+    if (this.alertKeyword) {
+      this.newsService.searchLocalNews(this.alertKeyword, this.alertLanguage, skipCount, this.pageSize).subscribe({
+        next: (result: PagedResultDto<NewsArticleDto>) => {
+          const newArticles = result.items || [];
+          this.articles = [...this.articles, ...newArticles];
+          this.currentPage++;
+          this.hasMoreNews = newArticles.length >= this.pageSize;
+          this.loadingMore = false;
+        },
+        error: (err) => {
+          console.error('Error loading more news:', err);
+          this.loadingMore = false;
+        }
+      });
+    } else if (this.alertCategory) {
+      const page = this.currentPage + 1;
+      this.newsService.getTopHeadlines(this.alertCategory, undefined, this.alertLanguage, page, this.pageSize).subscribe({
+        next: (result: PagedResultDto<NewsArticleDto>) => {
+          const newArticles = result.items || [];
+          this.articles = [...this.articles, ...newArticles];
+          this.currentPage++;
+          this.hasMoreNews = newArticles.length >= this.pageSize;
+          this.loadingMore = false;
+        },
+        error: (err) => {
+          console.error('Error loading more news:', err);
+          this.loadingMore = false;
+        }
+      });
+    }
   }
 
   handleError(err: any): void {

@@ -11,9 +11,8 @@ namespace NewsApp.NewsAlerts
         [StringLength(1024)]
         public string? Description { get; set; }
         
-        [Required]
         [StringLength(512)]
-        public string Categories { get; set; }
+        public string? Categories { get; set; }
         
         [Required]
         [StringLength(5)]

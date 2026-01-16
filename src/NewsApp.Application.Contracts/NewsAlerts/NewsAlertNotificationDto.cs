@@ -24,5 +24,7 @@ namespace NewsApp.NewsAlerts
         public DateTime? EmailSentAt { get; set; }
         
         public DateTime NewestArticleDate { get; set; }
+        
+        public string ArticleUrls { get; set; }
     }
 }
