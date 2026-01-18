@@ -90,160 +90,92 @@ namespace NewsApp.NewsAlerts.BackgroundWorkers
                     {
                         _logger.LogInformation("Checking alert: {AlertName} for user {UserId}", alert.Name, alert.UserId);
                         
-                        // Get news since last check or last 24 hours if never checked
-                        var publishedAfter = alert.LastCheckedAt ?? DateTime.UtcNow.AddHours(-24);
+                        // Skip alerts without keywords
+                        if (string.IsNullOrWhiteSpace(alert.Keyword))
+                        {
+                            _logger.LogWarning("Skipping alert '{AlertName}' - no keyword specified", alert.Name);
+                            continue;
+                        }
+                        
+                        // Get news since last check or last 7 days if never checked
+                        var publishedAfter = alert.LastCheckedAt ?? DateTime.UtcNow.AddDays(-7);
                         
                         // Map language code
                         var language = MapToNewsAPILanguage(alert.LanguageCode);
                         
-                        // Determine if this is a keyword-based or category-based alert
-                        var hasKeyword = !string.IsNullOrWhiteSpace(alert.Keyword);
-                        var hasCategory = !string.IsNullOrWhiteSpace(alert.Categories) && alert.Categories != "general";
-
-                        if (hasKeyword)
+                        _logger.LogInformation("Searching by keyword: {Keyword} from {PublishedAfter}", 
+                            alert.Keyword, publishedAfter);
+                        
+                        var query = BuildKeywordQuery(alert.Keyword ?? "");
+                        
+                        var request = new EverythingRequest
                         {
-                            // Keyword-based search using /everything endpoint
-                            _logger.LogInformation("Searching by keyword: {Keyword}", alert.Keyword);
-                            
-                            var query = BuildKeywordQuery(alert.Keyword);
-                            
-                            var request = new EverythingRequest
-                            {
-                                Q = query,
-                                Language = language,
-                                From = publishedAfter,
-                                PageSize = MaxArticlesPerCategory,
-                                SortBy = SortBys.PublishedAt
-                            };
-                            
-                            var response = await newsApiClient.GetEverythingAsync(request);
+                            Q = query,
+                            Language = language,
+                            From = publishedAfter,
+                            PageSize = MaxArticlesPerCategory,
+                            SortBy = SortBys.PublishedAt
+                        };
+                        
+                        var response = await newsApiClient.GetEverythingAsync(request);
 
-                            if (response.Status == Statuses.Ok && response.Articles != null)
-                            {
-                                var newArticles = response.Articles
-                                    .Where(a => a.PublishedAt.HasValue && a.PublishedAt.Value > publishedAfter)
-                                    .ToList();
+                        if (response.Status == Statuses.Ok && response.Articles != null)
+                        {
+                            var newArticles = response.Articles
+                                .Where(a => a.PublishedAt.HasValue && a.PublishedAt.Value > publishedAfter)
+                                .ToList();
 
-                                if (newArticles.Any())
+                            if (newArticles.Any())
+                            {
+                                // Update LastCheckedAt to the most recent article date
+                                var mostRecentArticleDate = newArticles.Max(a => a.PublishedAt!.Value);
+                                alert.LastCheckedAt = mostRecentArticleDate;
+                                
+                                // Get URLs of the articles
+                                var articleUrls = string.Join(",", newArticles.Select(a => a.Url));
+                                
+                                var notification = new NewsAlertNotification(
+                                    Guid.NewGuid(),
+                                    alert.UserId,
+                                    alert.Id,
+                                    alert.Name,
+                                    "keyword",
+                                    alert.LanguageCode,
+                                    newArticles.Count,
+                                    mostRecentArticleDate,
+                                    articleUrls
+                                );
+
+                                await notificationRepository.InsertAsync(notification);
+
+                                if (!notificationsByUser.ContainsKey(alert.UserId))
                                 {
-                                    // Get URLs of the articles
-                                    var articleUrls = string.Join(",", newArticles.Select(a => a.Url));
-                                    
-                                    var notification = new NewsAlertNotification(
-                                        Guid.NewGuid(),
-                                        alert.UserId,
-                                        alert.Id,
-                                        alert.Name,
-                                        "keyword",
-                                        alert.LanguageCode,
-                                        newArticles.Count,
-                                        newArticles.Max(a => a.PublishedAt!.Value),
-                                        articleUrls
-                                    );
-
-                                    await notificationRepository.InsertAsync(notification);
-
-                                    if (!notificationsByUser.ContainsKey(alert.UserId))
-                                    {
-                                        notificationsByUser[alert.UserId] = new List<NewsAlertNotification>();
-                                    }
-                                    notificationsByUser[alert.UserId].Add(notification);
-
-                                    alert.MarkNewsFound();
-                                    
-                                    _logger.LogInformation(
-                                        "Found {Count} new articles for alert '{AlertName}' (keyword search)",
-                                        newArticles.Count, alert.Name);
+                                    notificationsByUser[alert.UserId] = new List<NewsAlertNotification>();
                                 }
+                                notificationsByUser[alert.UserId].Add(notification);
+
+                                alert.MarkNewsFound();
+                                
+                                _logger.LogInformation(
+                                    "Found {Count} new articles for alert '{AlertName}' (keyword search). Updated LastCheckedAt to {LastCheckedAt}",
+                                    newArticles.Count, alert.Name, mostRecentArticleDate);
                             }
                             else
                             {
-                                _logger.LogWarning("NewsAPI returned status: {Status}", response.Status);
-                            }
-                        }
-                        else if (hasCategory)
-                        {
-                            // Category-based search - process each category separately
-                            var categories = alert.Categories.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                                .Select(c => c.Trim())
-                                .Where(c => !string.IsNullOrWhiteSpace(c))
-                                .ToList();
-
-                            _logger.LogInformation("Searching {Count} categories: {Categories}", 
-                                categories.Count, string.Join(", ", categories));
-
-                            foreach (var category in categories)
-                            {
-                                try
-                                {
-                                    var newsCategory = MapToNewsAPICategory(category);
-                                    
-                                    var request = new TopHeadlinesRequest
-                                    {
-                                        Category = newsCategory,
-                                        Language = language,
-                                        PageSize = MaxArticlesPerCategory
-                                    };
-                                    
-                                    var response = await newsApiClient.GetTopHeadlinesAsync(request);
-
-                                    if (response.Status == Statuses.Ok && response.Articles != null)
-                                    {
-                                        var newArticles = response.Articles
-                                            .Where(a => a.PublishedAt.HasValue && a.PublishedAt.Value > publishedAfter)
-                                            .ToList();
-
-                                        if (newArticles.Any())
-                                        {
-                                            // Get URLs of the articles
-                                            var articleUrls = string.Join(",", newArticles.Select(a => a.Url));
-                                            
-                                            var notification = new NewsAlertNotification(
-                                                Guid.NewGuid(),
-                                                alert.UserId,
-                                                alert.Id,
-                                                alert.Name,
-                                                category,
-                                                alert.LanguageCode,
-                                                newArticles.Count,
-                                                newArticles.Max(a => a.PublishedAt!.Value),
-                                                articleUrls
-                                            );
-
-                                            await notificationRepository.InsertAsync(notification);
-
-                                            if (!notificationsByUser.ContainsKey(alert.UserId))
-                                            {
-                                                notificationsByUser[alert.UserId] = new List<NewsAlertNotification>();
-                                            }
-                                            notificationsByUser[alert.UserId].Add(notification);
-
-                                            alert.MarkNewsFound();
-                                            
-                                            _logger.LogInformation(
-                                                "Found {Count} new articles for alert '{AlertName}', category '{Category}'",
-                                                newArticles.Count, alert.Name, category);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        _logger.LogWarning("NewsAPI returned status: {Status} for category {Category}", 
-                                            response.Status, category);
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    _logger.LogError(ex, "Error checking category {Category} for alert {AlertId}", 
-                                        category, alert.Id);
-                                }
+                                // No new articles, update LastCheckedAt to now so we don't keep checking the same period
+                                alert.MarkAsChecked();
+                                _logger.LogInformation("No new articles found for alert '{AlertName}'. Updated LastCheckedAt to {LastCheckedAt}", 
+                                    alert.Name, DateTime.UtcNow);
                             }
                         }
                         else
                         {
-                            _logger.LogWarning("Alert {AlertId} has neither keyword nor valid category, skipping", alert.Id);
+                            // API error, still update LastCheckedAt to avoid repeated failing checks
+                            alert.MarkAsChecked();
+                            _logger.LogWarning("NewsAPI returned status: {Status}. Updated LastCheckedAt to {LastCheckedAt}", 
+                                response.Status, DateTime.UtcNow);
                         }
 
-                        alert.MarkAsChecked();
                         await alertListRepository.UpdateAsync(alert);
                     }
                     catch (Exception ex)

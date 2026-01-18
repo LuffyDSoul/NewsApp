@@ -60,22 +60,14 @@ namespace NewsApp.NewsAlerts
                 throw new BusinessException("An alert with this name already exists");
             }
             
-            // Validate that either categories OR keyword is provided (not both, not neither)
-            var hasCategories = !string.IsNullOrWhiteSpace(input.Categories);
-            var hasKeyword = !string.IsNullOrWhiteSpace(input.Keyword);
-            
-            if (!hasCategories && !hasKeyword)
+            // Validate that keyword is provided
+            if (string.IsNullOrWhiteSpace(input.Keyword))
             {
-                throw new BusinessException("Either categories or keywords must be provided");
+                throw new BusinessException("Keyword is required");
             }
             
-            if (hasCategories && hasKeyword)
-            {
-                throw new BusinessException("Cannot specify both categories and keywords. Choose one.");
-            }
-            
-            // If using categories, use them; otherwise use "general" as placeholder
-            var categories = hasCategories ? input.Categories!.Trim() : "general";
+            // Use "general" as placeholder for categories since we're keyword-only now
+            var categories = "general";
             
             var alert = new NewsAlertList(
                 GuidGenerator.Create(),
@@ -111,22 +103,14 @@ namespace NewsApp.NewsAlerts
                 throw new BusinessException("An alert with this name already exists");
             }
             
-            // Validate that either categories OR keyword is provided (not both, not neither)
-            var hasCategories = !string.IsNullOrWhiteSpace(input.Categories);
-            var hasKeyword = !string.IsNullOrWhiteSpace(input.Keyword);
-            
-            if (!hasCategories && !hasKeyword)
+            // Validate that keyword is provided
+            if (string.IsNullOrWhiteSpace(input.Keyword))
             {
-                throw new BusinessException("Either categories or keywords must be provided");
+                throw new BusinessException("Keyword is required");
             }
             
-            if (hasCategories && hasKeyword)
-            {
-                throw new BusinessException("Cannot specify both categories and keywords. Choose one.");
-            }
-            
-            // If using categories, use them; otherwise use "general" as placeholder
-            var categories = hasCategories ? input.Categories!.Trim() : "general";
+            // Use "general" as placeholder for categories since we're keyword-only now
+            var categories = "general";
             
             alert.Update(
                 input.Name,
@@ -218,128 +202,97 @@ namespace NewsApp.NewsAlerts
             {
                 try
                 {
-                    var publishedAfter = alert.LastCheckedAt ?? DateTime.UtcNow.AddHours(-24);
-                    var hasKeyword = !string.IsNullOrWhiteSpace(alert.Keyword);
-                    var hasCategory = !string.IsNullOrWhiteSpace(alert.Categories) && alert.Categories != "general";
+                    // Validate that alert has a keyword
+                    if (string.IsNullOrWhiteSpace(alert.Keyword))
+                    {
+                        results.Add($"🔔 Alert: '{alert.Name}'");
+                        results.Add($"   ⚠️ Skipping - No keyword specified\n");
+                        continue;
+                    }
+
+                    // Use last checked date as starting point, or last 7 days if never checked
+                    var publishedAfter = alert.LastCheckedAt ?? DateTime.UtcNow.AddDays(-7);
 
                     var alertInfo = $"🔔 Alert: '{alert.Name}'";
+                    alertInfo += $"\n   - Keyword: {alert.Keyword}";
                     alertInfo += $"\n   - Last checked: {(alert.LastCheckedAt.HasValue ? alert.LastCheckedAt.Value.ToString("yyyy-MM-dd HH:mm:ss") : "Never")}";
-                    alertInfo += $"\n   - Looking for articles after: {publishedAfter:yyyy-MM-dd HH:mm:ss}";
-                    alertInfo += $"\n   - Type: {(hasKeyword ? $"Keywords ({alert.Keyword})" : hasCategory ? $"Categories ({alert.Categories})" : "INVALID")}";
+                    alertInfo += $"\n   - Searching from: {publishedAfter:yyyy-MM-dd HH:mm:ss}";
                     results.Add(alertInfo);
 
-                    if (hasKeyword)
+                    var request = new EverythingRequest
                     {
-                        var request = new EverythingRequest
-                        {
-                            Q = alert.Keyword,
-                            Language = MapLanguage(alert.LanguageCode),
-                            From = publishedAfter,
-                            PageSize = 20,
-                            SortBy = SortBys.PublishedAt
-                        };
+                        Q = alert.Keyword,
+                        Language = MapLanguage(alert.LanguageCode),
+                        From = publishedAfter,
+                        PageSize = 20,
+                        SortBy = SortBys.PublishedAt
+                    };
+                    
+                    var response = await newsApiClient.GetEverythingAsync(request);
+                    
+                    if (response.Status == Statuses.Ok && response.Articles != null)
+                    {
+                        results.Add($"   ✓ API Response: {response.Articles.Count} total articles returned");
                         
-                        var response = await newsApiClient.GetEverythingAsync(request);
-                        
-                        if (response.Status == Statuses.Ok && response.Articles != null)
+                        // Log some sample dates for debugging
+                        if (response.Articles.Any())
                         {
-                            results.Add($"   ✓ API Response: {response.Articles.Count} total articles returned");
+                            var sampleArticles = response.Articles.Take(3).Where(a => a.PublishedAt.HasValue).ToList();
+                            foreach (var sample in sampleArticles)
+                            {
+                                var title = sample.Title ?? "[No title]";
+                                var shortTitle = title.Length > 50 ? title.Substring(0, 50) : title;
+                                results.Add($"      Sample: {shortTitle}... published at {sample.PublishedAt:yyyy-MM-dd HH:mm:ss}");
+                            }
+                        }
+                        
+                        var newArticles = response.Articles
+                            .Where(a => a.PublishedAt.HasValue && a.PublishedAt.Value > publishedAfter)
+                            .ToList();
+
+                        results.Add($"   → {newArticles.Count} articles are newer than {publishedAfter:yyyy-MM-dd HH:mm:ss}");
+
+                        if (newArticles.Any())
+                        {
+                            // Update LastCheckedAt to the most recent article date
+                            var mostRecentArticleDate = newArticles.Max(a => a.PublishedAt!.Value);
+                            alert.LastCheckedAt = mostRecentArticleDate;
                             
-                            var newArticles = response.Articles
-                                .Where(a => a.PublishedAt.HasValue && a.PublishedAt.Value > publishedAfter)
-                                .ToList();
+                            var articleUrls = string.Join(",", newArticles.Select(a => a.Url));
+                            
+                            var notification = new NewsAlertNotification(
+                                GuidGenerator.Create(),
+                                alert.UserId,
+                                alert.Id,
+                                alert.Name,
+                                "keyword",
+                                alert.LanguageCode,
+                                newArticles.Count,
+                                mostRecentArticleDate,
+                                articleUrls
+                            );
 
-                            results.Add($"   → {newArticles.Count} articles are newer than {publishedAfter:yyyy-MM-dd HH:mm:ss}");
-
-                            if (newArticles.Any())
-                            {
-                                var notification = new NewsAlertNotification(
-                                    GuidGenerator.Create(),
-                                    alert.UserId,
-                                    alert.Id,
-                                    alert.Name,
-                                    "keyword",
-                                    alert.LanguageCode,
-                                    newArticles.Count,
-                                    newArticles.Max(a => a.PublishedAt!.Value)
-                                );
-
-                                await _notificationRepository.InsertAsync(notification);
-                                notificationCount++;
-                                results.Add($"   ✅ Created notification! Found {newArticles.Count} new articles");
-                            }
-                            else
-                            {
-                                results.Add($"   ℹ️ No new articles found for this keyword search");
-                            }
+                            await _notificationRepository.InsertAsync(notification);
+                            notificationCount++;
+                            results.Add($"   ✅ Created notification! Found {newArticles.Count} new articles");
+                            results.Add($"   ⏰ Updated LastCheckedAt to: {mostRecentArticleDate:yyyy-MM-dd HH:mm:ss}");
+                            
+                            // Update last news found time
+                            alert.MarkNewsFound();
                         }
                         else
                         {
-                            results.Add($"   ❌ API Error: {response.Status}");
-                        }
-                    }
-                    else if (hasCategory)
-                    {
-                        var categories = alert.Categories.Split(',').Select(c => c.Trim()).ToList();
-                        results.Add($"   → Checking {categories.Count} category(ies)...");
-                        
-                        foreach (var category in categories)
-                        {
-                            results.Add($"   📁 Category: {category}");
-                            
-                            var request = new TopHeadlinesRequest
-                            {
-                                Category = MapCategory(category),
-                                Language = MapLanguage(alert.LanguageCode),
-                                PageSize = 20
-                            };
-                            
-                            var response = await newsApiClient.GetTopHeadlinesAsync(request);
-                            
-                            if (response.Status == Statuses.Ok && response.Articles != null)
-                            {
-                                results.Add($"      ✓ API Response: {response.Articles.Count} total articles");
-                                
-                                var newArticles = response.Articles
-                                    .Where(a => a.PublishedAt.HasValue && a.PublishedAt.Value > publishedAfter)
-                                    .ToList();
-
-                                results.Add($"      → {newArticles.Count} articles are newer than {publishedAfter:yyyy-MM-dd HH:mm:ss}");
-
-                                if (newArticles.Any())
-                                {
-                                    var notification = new NewsAlertNotification(
-                                        GuidGenerator.Create(),
-                                        alert.UserId,
-                                        alert.Id,
-                                        alert.Name,
-                                        category,
-                                        alert.LanguageCode,
-                                        newArticles.Count,
-                                        newArticles.Max(a => a.PublishedAt!.Value)
-                                    );
-
-                                    await _notificationRepository.InsertAsync(notification);
-                                    notificationCount++;
-                                    results.Add($"      ✅ Created notification! Found {newArticles.Count} new articles");
-                                }
-                                else
-                                {
-                                    results.Add($"      ℹ️ No new articles for this category");
-                                }
-                            }
-                            else
-                            {
-                                results.Add($"      ❌ API Error: {response.Status}");
-                            }
+                            // No new articles, update LastCheckedAt to now so we don't keep checking the same period
+                            alert.MarkAsChecked();
+                            results.Add($"   ℹ️ No new articles found");
+                            results.Add($"   ⏰ Updated LastCheckedAt to: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}");
                         }
                     }
                     else
                     {
-                        results.Add($"   ⚠️ Alert has no valid keywords or categories!");
+                        results.Add($"   ❌ API Error: {response.Status}");
                     }
 
-                    alert.MarkAsChecked();
                     await _alertListRepository.UpdateAsync(alert);
                     results.Add(""); // Empty line between alerts
                 }

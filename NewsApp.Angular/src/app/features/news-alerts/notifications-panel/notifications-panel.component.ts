@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { NewsAlertService, NewsAlertNotificationDto } from '../../../core/services/news-alert.service';
+import { NewsAlertService, NewsAlertNotificationDto, NewsAlertListDto } from '../../../core/services/news-alert.service';
 import { interval, Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -161,13 +161,9 @@ export class NotificationsPanelComponent implements OnInit, OnDestroy {
     this.apiCallCount++;
     this.newsAlertService.markAllAsRead().subscribe({
       next: () => {
-        // Remove unread notifications from the list if showing unread only
-        if (this.showUnreadOnly) {
-          this.notifications = [];
-        } else {
-          this.notifications.forEach(n => n.isRead = true);
-        }
         this.unreadCount = 0;
+        // Reload notifications to reflect the change
+        this.loadNotifications();
       },
       error: (error) => {
         console.error('Error marking all as read:', error);
@@ -181,48 +177,39 @@ export class NotificationsPanelComponent implements OnInit, OnDestroy {
       this.markAsRead(notification);
     }
 
-    // Navigate to news list to show this notification's articles
-    this.closePanel();
-    
-    // First, get the alert configuration to know what to search for
-    if (this.apiCallCount >= this.MAX_API_CALLS) {
-      console.warn('Límite de llamadas API alcanzado');
-      this.router.navigate(['/news']);
-      return;
-    }
-    
-    this.apiCallCount++;
+    // First, get the alert details to retrieve the keyword
     this.newsAlertService.getAlert(notification.newsAlertListId).subscribe({
-      next: (alert) => {
+      next: (alert: NewsAlertListDto) => {
+        // Navigate to news list with the alert's keyword
+        this.closePanel();
+        
         const queryParams: any = {
-          alertName: alert.name,
-          language: alert.languageCode,
+          keyword: alert.keyword, // Get keyword from the alert
+          alertName: notification.alertListName,
+          language: notification.languageCode,
           fromNotification: 'true',
           notificationId: notification.id,
-          articleCount: notification.newArticlesCount
+          articleCount: notification.newArticlesCount,
+          articleUrls: notification.articleUrls || '' // Pass the specific article URLs
         };
-        
-        // Add keyword if present, otherwise add categories
-        if (alert.keyword && alert.keyword.trim()) {
-          queryParams.keyword = alert.keyword.trim();
-        } else if (alert.categories && alert.categories.trim()) {
-          queryParams.categories = alert.categories.trim();
-        }
         
         this.router.navigate(['/alert-news'], { queryParams });
       },
-      error: (error) => {
-        console.error('Error loading alert:', error);
-        // Fallback: navigate with basic info
-        this.router.navigate(['/alert-news'], {
-          queryParams: {
-            category: notification.category,
-            language: notification.languageCode,
-            fromNotification: 'true',
-            notificationId: notification.id,
-            articleCount: notification.newArticlesCount
-          }
-        });
+      error: (error: any) => {
+        console.error('Error loading alert details:', error);
+        // Fallback: navigate without keyword (will show error in alert-news component)
+        this.closePanel();
+        
+        const queryParams: any = {
+          alertName: notification.alertListName,
+          language: notification.languageCode,
+          fromNotification: 'true',
+          notificationId: notification.id,
+          articleCount: notification.newArticlesCount,
+          articleUrls: notification.articleUrls || ''
+        };
+        
+        this.router.navigate(['/alert-news'], { queryParams });
       }
     });
   }

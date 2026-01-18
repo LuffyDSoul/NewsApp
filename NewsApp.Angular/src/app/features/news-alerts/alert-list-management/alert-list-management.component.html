@@ -54,14 +54,6 @@
           <span>{{ getLanguageName(alert.languageCode) }}</span>
         </div>
 
-        <div class="info-item" *ngIf="alert.categories">
-          <i class="fas fa-folder"></i>
-          <span>
-            <span style="margin-right: 4px;">Categories:</span>
-            <strong style="display: inline;">{{ alert.categories }}</strong>
-          </span>
-        </div>
-
         <div class="info-item" *ngIf="alert.keyword">
           <i class="fas fa-key"></i>
           <span>
@@ -140,32 +132,16 @@
       </div>
 
       <div class="form-group">
-        <label>Categories</label>
-        <div class="categories-checkboxes">
-          <label *ngFor="let cat of availableCategories" class="checkbox-label">
-            <input 
-              type="checkbox" 
-              [checked]="isCategorySelected(cat.value)"
-              [disabled]="areCategoriesDisabled()"
-              (change)="toggleCategory(cat.value, $event)">
-            <span>{{ cat.name }}</span>
-          </label>
-        </div>
-        <small class="form-text">✨ Select one or more categories (OR logic: you'll get alerts for ANY selected category). Cannot combine with keywords.</small>
-      </div>
-
-      <div class="form-group">
-        <label for="alertKeyword">Keywords</label>
+        <label for="alertKeyword">Keywords *</label>
         <input 
           id="alertKeyword"
           type="text" 
           [(ngModel)]="currentAlert.keyword"
-          (input)="onKeywordInput()"
-          [disabled]="isKeywordDisabled()"
           placeholder="e.g., AI, Artificial Intelligence, Machine Learning"
           maxlength="256"
-          class="form-control">
-        <small class="form-text">✨ Enter keywords separated by commas (OR logic: articles matching ANY keyword). Cannot combine with categories.</small>
+          class="form-control"
+          required>
+        <small class="form-text">✨ Enter keywords separated by commas (OR logic: articles matching ANY keyword).</small>
       </div>
 
       <div class="form-group">

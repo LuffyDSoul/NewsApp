@@ -47,43 +47,86 @@ namespace NewsApp.News
             var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
             
             // Limit page size to prevent crashes
-            pageSize = Math.Min(pageSize, 10);
+            pageSize = Math.Min(pageSize, 100);
             
-            // Build query based on category or use generic term
-            string query = "news";
-            if (!string.IsNullOrEmpty(category))
-            {
-                query = category;
-            }
-            
-            var everythingRequest = new EverythingRequest
-            {
-                Q = query,
-                Language = GetLanguageFromCode(language),
-                Page = page,
-                PageSize = pageSize,
-                SortBy = SortBys.PublishedAt
-            };
-
-            var headlines = await newsApiClient.GetEverythingAsync(everythingRequest);
-
             var articles = new List<NewsArticleDto>();
             
-            if (headlines.Status == Statuses.Ok && headlines.Articles != null)
+            // Check if category looks like a keyword search (contains spaces or special chars)
+            bool isKeywordSearch = !string.IsNullOrEmpty(category) && 
+                (category.Contains(" ") || category.Contains("|") || category.Contains("\""));
+            
+            if (isKeywordSearch)
             {
-                articles = headlines.Articles.Select(a => new NewsArticleDto
+                // Use /everything endpoint for keyword searches
+                // Always get recent articles from last 48 hours
+                var everythingRequest = new EverythingRequest
                 {
-                    Id = Guid.NewGuid(),
-                    Source = a.Source?.Name ?? "Unknown",
-                    Title = a.Title ?? "",
-                    Description = a.Description ?? "",
-                    Url = a.Url ?? "",
-                    UrlToImage = a.UrlToImage,
-                    PublishedAt = a.PublishedAt ?? DateTime.Now,
-                    Content = a.Content,
-                    Author = a.Author,
-                    LanguageCode = language
-                }).ToList();
+                    Q = category,
+                    Language = GetLanguageFromCode(language),
+                    From = DateTime.UtcNow.AddHours(-48),
+                    Page = page,
+                    PageSize = pageSize,
+                    SortBy = SortBys.PublishedAt
+                };
+
+                var response = await newsApiClient.GetEverythingAsync(everythingRequest);
+                
+                if (response.Status == Statuses.Ok && response.Articles != null)
+                {
+                    articles = response.Articles.Select(a => new NewsArticleDto
+                    {
+                        Id = Guid.NewGuid(),
+                        Source = a.Source?.Name ?? "Unknown",
+                        Title = a.Title ?? "",
+                        Description = a.Description ?? "",
+                        Url = a.Url ?? "",
+                        UrlToImage = a.UrlToImage,
+                        PublishedAt = a.PublishedAt ?? DateTime.Now,
+                        Content = a.Content,
+                        Author = a.Author,
+                        LanguageCode = language
+                    }).ToList();
+                }
+            }
+            else
+            {
+                // Use /top-headlines endpoint for category searches
+                var headlinesRequest = new TopHeadlinesRequest
+                {
+                    Language = GetLanguageFromCode(language),
+                    PageSize = pageSize
+                };
+                
+                // Set category if provided
+                if (!string.IsNullOrEmpty(category))
+                {
+                    headlinesRequest.Category = MapToNewsAPICategory(category);
+                }
+                
+                // Set country if provided (cannot use both country and category in top-headlines)
+                if (!string.IsNullOrEmpty(country) && string.IsNullOrEmpty(category))
+                {
+                    headlinesRequest.Country = GetCountryFromCode(country);
+                }
+
+                var response = await newsApiClient.GetTopHeadlinesAsync(headlinesRequest);
+                
+                if (response.Status == Statuses.Ok && response.Articles != null)
+                {
+                    articles = response.Articles.Select(a => new NewsArticleDto
+                    {
+                        Id = Guid.NewGuid(),
+                        Source = a.Source?.Name ?? "Unknown",
+                        Title = a.Title ?? "",
+                        Description = a.Description ?? "",
+                        Url = a.Url ?? "",
+                        UrlToImage = a.UrlToImage,
+                        PublishedAt = a.PublishedAt ?? DateTime.Now,
+                        Content = a.Content,
+                        Author = a.Author,
+                        LanguageCode = language
+                    }).ToList();
+                }
             }
 
             return new PagedResultDto<NewsArticleDto>(articles.Count, articles);
@@ -124,6 +167,7 @@ namespace NewsApp.News
             {
                 Sources = sources.Split(',').Select(s => s.Trim()).ToList(),
                 Language = GetLanguageFromCode(language),
+                From = DateTime.UtcNow.AddDays(-7),
                 Page = page,
                 PageSize = pageSize
             });
@@ -160,6 +204,7 @@ namespace NewsApp.News
             {
                 Q = "news",
                 Language = GetLanguageFromCode(language ?? "en"),
+                From = DateTime.UtcNow.AddDays(-7),
                 PageSize = 20
             };
 
@@ -198,12 +243,11 @@ namespace NewsApp.News
             // Limit count to prevent crashes
             count = Math.Min(count, 10);
             
-            var headlines = await newsApiClient.GetEverythingAsync(new EverythingRequest
+            // Use top-headlines for better results with language filter
+            var headlines = await newsApiClient.GetTopHeadlinesAsync(new TopHeadlinesRequest
             {
-                Q = "news",
                 Language = GetLanguageFromCode(languageCode ?? "en"),
-                PageSize = count,
-                SortBy = SortBys.PublishedAt
+                PageSize = count
             });
 
             var articles = new List<NewsArticleDto>();
@@ -263,6 +307,7 @@ namespace NewsApp.News
             {
                 Q = source,
                 Language = Languages.EN, // TODO: Add language parameter
+                From = DateTime.UtcNow.AddDays(-7),
                 PageSize = maxResultCount
             });
 
@@ -308,6 +353,7 @@ namespace NewsApp.News
             {
                 Q = query,
                 Language = GetLanguageFromCode(languageCode ?? "en"),
+                From = DateTime.UtcNow.AddDays(-7),
                 PageSize = maxResultCount
             });
 
@@ -378,6 +424,7 @@ namespace NewsApp.News
             {
                 Q = query,
                 Language = GetLanguageFromCode(language),
+                From = DateTime.UtcNow.AddDays(-7),
                 Page = page,
                 PageSize = pageSize,
                 SortBy = SortBys.PublishedAt
@@ -414,6 +461,7 @@ namespace NewsApp.News
         {
             return languageCode?.ToLower() switch
             {
+                "ar" => Languages.AR,
                 "de" => Languages.DE,
                 "en" => Languages.EN,
                 "es" => Languages.ES,
@@ -423,8 +471,43 @@ namespace NewsApp.News
                 "nl" => Languages.NL,
                 "no" => Languages.NO,
                 "pt" => Languages.PT,
+                "ru" => Languages.RU,
                 "sv" => Languages.SV,
+                "zh" => Languages.ZH,
                 _ => Languages.EN // Default to English
+            };
+        }
+
+        /// <summary>
+        /// Converts country code to NewsAPI Country constant
+        /// </summary>
+        private Countries GetCountryFromCode(string countryCode)
+        {
+            return countryCode?.ToLower() switch
+            {
+                "us" => Countries.US,
+                "gb" => Countries.GB,
+                "de" => Countries.DE,
+                "fr" => Countries.FR,
+                "it" => Countries.IT,
+                _ => Countries.US // Default to US
+            };
+        }
+
+        /// <summary>
+        /// Maps category string to NewsAPI Category enum
+        /// </summary>
+        private Categories MapToNewsAPICategory(string category)
+        {
+            return category?.ToLower() switch
+            {
+                "business" => Categories.Business,
+                "entertainment" => Categories.Entertainment,
+                "health" => Categories.Health,
+                "science" => Categories.Science,
+                "sports" => Categories.Sports,
+                "technology" => Categories.Technology,
+                _ => Categories.Business // Default to Business since General doesn't exist
             };
         }
 

@@ -44,101 +44,14 @@ export class AlertListManagementComponent implements OnInit {
     { code: 'sv', name: 'Swedish' }
   ];
 
-  availableCategories = [
-    { value: 'business', name: 'Business' },
-    { value: 'entertainment', name: 'Entertainment' },
-    { value: 'general', name: 'General' },
-    { value: 'health', name: 'Health' },
-    { value: 'science', name: 'Science' },
-    { value: 'sports', name: 'Sports' },
-    { value: 'technology', name: 'Technology' }
-  ];
-
-  selectedCategories: Set<string> = new Set<string>();
-
   alertNotificationCounts: { [alertId: string]: number } = {};
-
-  // API call limits - 5 per category checked
-  private apiCallCounts: Map<string, number> = new Map();
-  private readonly MAX_API_CALLS_PER_CATEGORY = 5;
 
   constructor(
     private newsAlertService: NewsAlertService,
     private router: Router
   ) {}
 
-  isCategorySelected(category: string): boolean {
-    return this.selectedCategories.has(category);
-  }
-
-  toggleCategory(category: string, event: Event): void {
-    const checkbox = event.target as HTMLInputElement;
-    const categoryKey = `category_${category}`;
-    
-    if (checkbox.checked) {
-      // Initialize API call count for this category
-      if (!this.apiCallCounts.has(categoryKey)) {
-        this.apiCallCounts.set(categoryKey, 0);
-      }
-      this.selectedCategories.add(category);
-    } else {
-      this.selectedCategories.delete(category);
-      // Remove API call count for this category
-      this.apiCallCounts.delete(categoryKey);
-    }
-    // Update the categories string
-    this.currentAlert.categories = Array.from(this.selectedCategories).join(',');
-  }
-
-  areCategoriesDisabled(): boolean {
-    return !!(this.currentAlert.keyword && this.currentAlert.keyword.trim());
-  }
-
-  isKeywordDisabled(): boolean {
-    return this.selectedCategories.size > 0;
-  }
-
-  onKeywordInput(): void {
-    // If user starts typing keywords, clear selected categories
-    if (this.currentAlert.keyword && this.currentAlert.keyword.trim()) {
-      this.selectedCategories.clear();
-      this.currentAlert.categories = '';
-    }
-  }
-
   checkAlertsNow(): void {
-    // Check API call limits for each category
-    for (const category of this.selectedCategories) {
-      const categoryKey = `category_${category}`;
-      const currentCount = this.apiCallCounts.get(categoryKey) || 0;
-      
-      if (currentCount >= this.MAX_API_CALLS_PER_CATEGORY) {
-        alert(`Se ha alcanzado el límite de ${this.MAX_API_CALLS_PER_CATEGORY} llamadas para la categoría: ${category}`);
-        return;
-      }
-    }
-    
-    // Also check keyword limit if keyword is set
-    if (this.currentAlert.keyword && this.currentAlert.keyword.trim()) {
-      const keywordKey = `keyword_${this.currentAlert.keyword}`;
-      const currentCount = this.apiCallCounts.get(keywordKey) || 0;
-      
-      if (currentCount >= this.MAX_API_CALLS_PER_CATEGORY) {
-        alert(`Se ha alcanzado el límite de ${this.MAX_API_CALLS_PER_CATEGORY} llamadas para el keyword: ${this.currentAlert.keyword}`);
-        return;
-      }
-      
-      // Increment keyword call count
-      this.apiCallCounts.set(keywordKey, currentCount + 1);
-    } else {
-      // Increment category call counts
-      for (const category of this.selectedCategories) {
-        const categoryKey = `category_${category}`;
-        const currentCount = this.apiCallCounts.get(categoryKey) || 0;
-        this.apiCallCounts.set(categoryKey, currentCount + 1);
-      }
-    }
-    
     this.loading = true;
     this.newsAlertService.triggerManualCheck().subscribe({
       next: (response) => {
@@ -199,27 +112,19 @@ export class AlertListManagementComponent implements OnInit {
     // Navigate to alert-news page with alert filters
     const queryParams: any = {
       alertName: alert.name,
+      keyword: alert.keyword || '',
       language: alert.languageCode
     };
-    
-    // Add keyword if present, otherwise add categories
-    if (alert.keyword && alert.keyword.trim()) {
-      queryParams.keyword = alert.keyword.trim();
-    } else if (alert.categories && alert.categories.trim() && alert.categories !== 'general') {
-      // Send categories (plural) for multiple category support
-      queryParams.categories = alert.categories.trim();
-    }
     
     this.router.navigate(['/alert-news'], { queryParams });
   }
 
   openCreateModal(): void {
     this.editMode = false;
-    this.selectedCategories.clear();
     this.currentAlert = {
       name: '',
       description: '',
-      categories: '',
+      categories: 'general',
       languageCode: 'en',
       keyword: '',
       isActive: true
@@ -231,48 +136,14 @@ export class AlertListManagementComponent implements OnInit {
     this.editMode = true;
     this.editingAlertId = alert.id;
     
-    // Clear previous state
-    this.selectedCategories.clear();
-    
-    // Determine if this alert uses keywords or categories
-    const hasKeyword = alert.keyword && alert.keyword.trim();
-    const hasCategories = alert.categories && alert.categories.trim();
-    
-    // If alert has keywords, only load keywords (ignore categories)
-    if (hasKeyword) {
-      this.currentAlert = {
-        name: alert.name,
-        description: alert.description || '',
-        categories: '',  // Clear categories
-        languageCode: alert.languageCode,
-        keyword: alert.keyword || '',
-        isActive: alert.isActive
-      };
-      // Don't load any categories into selectedCategories
-    } else if (hasCategories) {
-      // Alert uses categories, load them
-      const cats = alert.categories.split(',').map(c => c.trim()).filter(c => c);
-      cats.forEach(cat => this.selectedCategories.add(cat));
-      
-      this.currentAlert = {
-        name: alert.name,
-        description: alert.description || '',
-        categories: alert.categories || '',
-        languageCode: alert.languageCode,
-        keyword: '',  // Clear keyword
-        isActive: alert.isActive
-      };
-    } else {
-      // No keyword or categories (shouldn't happen, but handle it)
-      this.currentAlert = {
-        name: alert.name,
-        description: alert.description || '',
-        categories: '',
-        languageCode: alert.languageCode,
-        keyword: '',
-        isActive: alert.isActive
-      };
-    }
+    this.currentAlert = {
+      name: alert.name,
+      description: alert.description || '',
+      categories: 'general',
+      languageCode: alert.languageCode,
+      keyword: alert.keyword || '',
+      isActive: alert.isActive
+    };
     
     this.showModal = true;
   }
@@ -280,7 +151,6 @@ export class AlertListManagementComponent implements OnInit {
   closeModal(): void {
     this.showModal = false;
     this.editingAlertId = null;
-    this.selectedCategories.clear();
   }
 
   saveAlert(): void {
@@ -289,29 +159,14 @@ export class AlertListManagementComponent implements OnInit {
       return;
     }
 
-    // Update categories from selectedCategories set
-    this.currentAlert.categories = Array.from(this.selectedCategories).join(',');
-
-    // Validar que se haya seleccionado categoría O keyword, pero no ambas
-    const hasCategory = this.currentAlert.categories && this.currentAlert.categories.trim();
-    const hasKeyword = this.currentAlert.keyword && this.currentAlert.keyword.trim();
-
-    if (!hasCategory && !hasKeyword) {
-      alert('Please select a category OR enter keywords (at least one is required)');
+    if (!this.currentAlert.keyword || !this.currentAlert.keyword.trim()) {
+      alert('Keyword is required');
       return;
     }
 
-    if (hasCategory && hasKeyword) {
-      alert('Please select either a category OR keywords, not both');
-      return;
-    }
-
-    // Clear the field that's not being used
-    if (hasCategory) {
-      this.currentAlert.keyword = '';
-    } else if (hasKeyword) {
-      this.currentAlert.categories = '';
-    }
+    // Always set categories to 'general' as it's no longer used
+    this.currentAlert.categories = 'general';
+    this.currentAlert.keyword = this.currentAlert.keyword.trim();
 
     this.loading = true;
 
@@ -405,6 +260,17 @@ export class AlertListManagementComponent implements OnInit {
   formatDate(date?: Date | string): string {
     if (!date) return 'Never';
     const d = new Date(date);
-    return d.toLocaleString();
+    
+    // Format: Jan 18, 2026 at 3:45 PM
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    };
+    
+    return d.toLocaleString('en-US', options);
   }
 }

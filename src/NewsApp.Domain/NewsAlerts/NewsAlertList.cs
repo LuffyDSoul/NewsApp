@@ -47,6 +47,9 @@ namespace NewsApp.Domain.NewsAlerts
         protected NewsAlertList()
         {
             // For EF Core
+            Name = string.Empty;
+            Categories = string.Empty;
+            LanguageCode = string.Empty;
         }
 
         public NewsAlertList(
