@@ -51,17 +51,26 @@ namespace NewsApp.News
             
             var articles = new List<NewsArticleDto>();
             
-            // Check if category looks like a keyword search (contains spaces or special chars)
+            // Valid NewsAPI categories
+            var validCategories = new[] { "business", "entertainment", "general", "health", "science", "sports", "technology" };
+            
+            // Check if category is a keyword search (not a valid category, or contains special chars)
             bool isKeywordSearch = !string.IsNullOrEmpty(category) && 
-                (category.Contains(" ") || category.Contains("|") || category.Contains("\""));
+                (!validCategories.Contains(category.ToLower()) || 
+                 category.Contains(" ") || 
+                 category.Contains("|") || 
+                 category.Contains("\""));
             
             if (isKeywordSearch)
             {
                 // Use /everything endpoint for keyword searches
                 // Always get recent articles from last 48 hours
+                // Convert keywords separated by | or , to NewsAPI OR format
+                var query = ConvertToNewsApiQuery(category);
+                
                 var everythingRequest = new EverythingRequest
                 {
-                    Q = category,
+                    Q = query,
                     Language = GetLanguageFromCode(language),
                     From = DateTime.UtcNow.AddHours(-48),
                     Page = page,
@@ -512,7 +521,7 @@ namespace NewsApp.News
         }
 
         /// <summary>
-        /// Builds keyword query with OR for multiple keywords separated by comma
+        /// Builds keyword query with OR for multiple keywords separated by comma or pipe
         /// </summary>
         private string BuildKeywordQuery(string keyword)
         {
@@ -521,8 +530,8 @@ namespace NewsApp.News
                 return "news";
             }
 
-            // Split by comma and trim whitespace
-            var keywords = keyword.Split(',')
+            // Split by comma or pipe and trim whitespace
+            var keywords = keyword.Split(new[] { ',', '|' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(k => k.Trim())
                 .Where(k => !string.IsNullOrWhiteSpace(k))
                 .ToList();
@@ -540,5 +549,10 @@ namespace NewsApp.News
             // Build query with OR: "keyword1 OR keyword2 OR keyword3"
             return string.Join(" OR ", keywords);
         }
+        
+        /// <summary>
+        /// Alias for BuildKeywordQuery - converts keywords to NewsAPI query format
+        /// </summary>
+        private string ConvertToNewsApiQuery(string keyword) => BuildKeywordQuery(keyword);
     }
 }

@@ -219,9 +219,12 @@ namespace NewsApp.NewsAlerts
                     alertInfo += $"\n   - Searching from: {publishedAfter:yyyy-MM-dd HH:mm:ss}";
                     results.Add(alertInfo);
 
+                    // Convert keywords separated by | or , to NewsAPI OR format
+                    var query = ConvertToNewsApiQuery(alert.Keyword ?? "");
+                    
                     var request = new EverythingRequest
                     {
-                        Q = alert.Keyword,
+                        Q = query,
                         Language = MapLanguage(alert.LanguageCode),
                         From = publishedAfter,
                         PageSize = 20,
@@ -247,16 +250,16 @@ namespace NewsApp.NewsAlerts
                         }
                         
                         var newArticles = response.Articles
-                            .Where(a => a.PublishedAt.HasValue && a.PublishedAt.Value > publishedAfter)
+                            .Where(a => a.PublishedAt.HasValue && a.PublishedAt.Value >= publishedAfter)
                             .ToList();
 
-                        results.Add($"   → {newArticles.Count} articles are newer than {publishedAfter:yyyy-MM-dd HH:mm:ss}");
+                        results.Add($"   → {newArticles.Count} articles are newer than or equal to {publishedAfter:yyyy-MM-dd HH:mm:ss}");
 
                         if (newArticles.Any())
                         {
-                            // Update LastCheckedAt to the most recent article date
+                            // Update LastCheckedAt to now to ensure we don't miss articles in future checks
                             var mostRecentArticleDate = newArticles.Max(a => a.PublishedAt!.Value);
-                            alert.LastCheckedAt = mostRecentArticleDate;
+                            alert.LastCheckedAt = DateTime.UtcNow;
                             
                             var articleUrls = string.Join(",", newArticles.Select(a => a.Url));
                             
@@ -275,7 +278,8 @@ namespace NewsApp.NewsAlerts
                             await _notificationRepository.InsertAsync(notification);
                             notificationCount++;
                             results.Add($"   ✅ Created notification! Found {newArticles.Count} new articles");
-                            results.Add($"   ⏰ Updated LastCheckedAt to: {mostRecentArticleDate:yyyy-MM-dd HH:mm:ss}");
+                            results.Add($"   📅 Most recent article from: {mostRecentArticleDate:yyyy-MM-dd HH:mm:ss}");
+                            results.Add($"   ⏰ Updated LastCheckedAt to: {alert.LastCheckedAt:yyyy-MM-dd HH:mm:ss}");
                             
                             // Update last news found time
                             alert.MarkNewsFound();
@@ -348,6 +352,36 @@ namespace NewsApp.NewsAlerts
                 "general" => Categories.Business,
                 _ => Categories.Business
             };
+        }
+        
+        /// <summary>
+        /// Converts keywords separated by | or , to NewsAPI query format with OR
+        /// </summary>
+        private string ConvertToNewsApiQuery(string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                return "news";
+            }
+
+            // Split by comma or pipe and trim whitespace
+            var keywords = keyword.Split(new[] { ',', '|' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(k => k.Trim())
+                .Where(k => !string.IsNullOrWhiteSpace(k))
+                .ToList();
+
+            if (keywords.Count == 0)
+            {
+                return "news";
+            }
+
+            if (keywords.Count == 1)
+            {
+                return keywords[0];
+            }
+
+            // Build query with OR: "keyword1 OR keyword2 OR keyword3"
+            return string.Join(" OR ", keywords);
         }
     }
 }

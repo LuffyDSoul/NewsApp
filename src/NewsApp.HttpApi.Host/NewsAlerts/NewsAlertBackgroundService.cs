@@ -250,8 +250,8 @@ namespace NewsApp.NewsAlerts.BackgroundWorkers
                 return "news";
             }
 
-            // Split by comma and trim whitespace
-            var keywords = keyword.Split(',')
+            // Split by comma or pipe and trim whitespace
+            var keywords = keyword.Split(new[] { ',', '|' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(k => k.Trim())
                 .Where(k => !string.IsNullOrWhiteSpace(k))
                 .ToList();
