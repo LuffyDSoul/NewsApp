@@ -77,9 +77,6 @@
         <button class="btn btn-view-news" (click)="viewAlertNews(alert)">
           <i class="fas fa-newspaper"></i>
           View News
-          <span class="notification-badge" *ngIf="alertNotificationCounts[alert.id] > 0">
-            {{ alertNotificationCounts[alert.id] }}
-          </span>
         </button>
       </div>
     </div>

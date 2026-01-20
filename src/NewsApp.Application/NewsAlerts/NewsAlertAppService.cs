@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Configuration;
 using NewsApp.Domain.NewsAlerts;
 using NewsAPI;
 using NewsAPI.Constants;
@@ -18,13 +19,18 @@ namespace NewsApp.NewsAlerts
     {
         private readonly INewsAlertListRepository _alertListRepository;
         private readonly INewsAlertNotificationRepository _notificationRepository;
+        private readonly IConfiguration _configuration;
+        private readonly string _newsApiKey;
 
         public NewsAlertAppService(
             INewsAlertListRepository alertListRepository,
-            INewsAlertNotificationRepository notificationRepository)
+            INewsAlertNotificationRepository notificationRepository,
+            IConfiguration configuration)
         {
             _alertListRepository = alertListRepository;
             _notificationRepository = notificationRepository;
+            _configuration = configuration;
+            _newsApiKey = _configuration["NewsApi:ApiKey"] ?? "";
         }
 
         public async Task<List<NewsAlertListDto>> GetMyAlertsAsync(bool? isActive = null)
@@ -53,9 +59,9 @@ namespace NewsApp.NewsAlerts
         {
             var userId = CurrentUser.Id ?? throw new BusinessException("User is not authenticated");
             
-            // Check if alert with same name already exists for this user
+            // Check if active alert with same name already exists for this user (excluding soft-deleted ones)
             var existingAlert = await _alertListRepository.GetByNameAsync(userId, input.Name);
-            if (existingAlert != null)
+            if (existingAlert != null && !existingAlert.IsDeleted)
             {
                 throw new BusinessException("An alert with this name already exists");
             }
@@ -96,9 +102,9 @@ namespace NewsApp.NewsAlerts
                 throw new BusinessException("You can only update your own alerts");
             }
             
-            // Check if another alert with same name exists
+            // Check if another active alert with same name exists (excluding soft-deleted ones)
             var existingAlert = await _alertListRepository.GetByNameAsync(alert.UserId, input.Name);
-            if (existingAlert != null && existingAlert.Id != id)
+            if (existingAlert != null && existingAlert.Id != id && !existingAlert.IsDeleted)
             {
                 throw new BusinessException("An alert with this name already exists");
             }
@@ -192,7 +198,7 @@ namespace NewsApp.NewsAlerts
                 return $"❌ No active alerts found for user {userId}. Please create at least one active alert.";
             }
 
-            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            var newsApiClient = new NewsApiClient(_newsApiKey);
             var results = new List<string>();
             var notificationCount = 0;
 
@@ -210,17 +216,27 @@ namespace NewsApp.NewsAlerts
                         continue;
                     }
 
-                    // Use last checked date as starting point, or last 7 days if never checked
-                    var publishedAfter = alert.LastCheckedAt ?? DateTime.UtcNow.AddDays(-7);
+                    // First time: use 2 days ago from the button press day
+                    // Next times: use last checked date (max 7 days back)
+                    var publishedAfter = alert.LastCheckedAt ?? DateTime.UtcNow.AddDays(-2);
+                    
+                    // Ensure we don't go back more than 7 days (NewsAPI limitation)
+                    var maxBackDate = DateTime.UtcNow.AddDays(-7);
+                    if (publishedAfter < maxBackDate)
+                    {
+                        publishedAfter = maxBackDate;
+                    }
 
                     var alertInfo = $"🔔 Alert: '{alert.Name}'";
                     alertInfo += $"\n   - Keyword: {alert.Keyword}";
+                    alertInfo += $"\n   - Language: {alert.LanguageCode}";
                     alertInfo += $"\n   - Last checked: {(alert.LastCheckedAt.HasValue ? alert.LastCheckedAt.Value.ToString("yyyy-MM-dd HH:mm:ss") : "Never")}";
                     alertInfo += $"\n   - Searching from: {publishedAfter:yyyy-MM-dd HH:mm:ss}";
                     results.Add(alertInfo);
 
                     // Convert keywords separated by | or , to NewsAPI OR format
                     var query = ConvertToNewsApiQuery(alert.Keyword ?? "");
+                    results.Add($"   - Query used: {query}");
                     
                     var request = new EverythingRequest
                     {
@@ -250,16 +266,16 @@ namespace NewsApp.NewsAlerts
                         }
                         
                         var newArticles = response.Articles
-                            .Where(a => a.PublishedAt.HasValue && a.PublishedAt.Value >= publishedAfter)
+                            .Where(a => a.PublishedAt.HasValue && a.PublishedAt.Value > publishedAfter)
                             .ToList();
 
-                        results.Add($"   → {newArticles.Count} articles are newer than or equal to {publishedAfter:yyyy-MM-dd HH:mm:ss}");
+                        results.Add($"   → {newArticles.Count} articles are newer than {publishedAfter:yyyy-MM-dd HH:mm:ss}");
 
                         if (newArticles.Any())
                         {
-                            // Update LastCheckedAt to now to ensure we don't miss articles in future checks
+                            // Update LastCheckedAt to the most recent article date
                             var mostRecentArticleDate = newArticles.Max(a => a.PublishedAt!.Value);
-                            alert.LastCheckedAt = DateTime.UtcNow;
+                            alert.LastCheckedAt = mostRecentArticleDate;
                             
                             var articleUrls = string.Join(",", newArticles.Select(a => a.Url));
                             

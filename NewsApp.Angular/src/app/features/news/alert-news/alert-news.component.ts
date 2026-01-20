@@ -154,34 +154,22 @@ export class AlertNewsComponent implements OnInit {
     console.log(`Loading ${urls.length} specific articles from notification`);
     console.log('Article URLs:', urls);
 
-    // Search for recent news with the keyword to find the articles
-    // Use searchLocalNews first to check local DB, then fall back to API
-    this.newsService.searchLocalNews(this.alertKeyword, this.alertLanguage, 0, 200).subscribe({
+    // Get fresh articles from API using the keyword
+    this.newsService.getTopHeadlines(this.alertKeyword, undefined, this.alertLanguage, 1, 20).subscribe({
       next: (result: PagedResultDto<NewsArticleDto>) => {
-        console.log(`Loaded ${result.items?.length || 0} articles from local database`);
+        console.log(`Loaded ${result.items?.length || 0} articles from API`);
         
         // Try to match articles by URL
         let matchedArticles = (result.items || []).filter(article => urls.includes(article.url));
         
         if (matchedArticles.length > 0) {
-          // Found some or all articles in local DB
-          console.log(`Found ${matchedArticles.length} articles in local database`);
+          // Found the specific articles
+          console.log(`Found ${matchedArticles.length} matching articles from notification`);
           this.articles = matchedArticles;
         } else {
-          // No matches in local DB, try to get recent articles from API
-          console.log('No matches in local DB, trying fresh API data...');
-          
-          // Show the most recent articles as fallback
-          this.articles = (result.items || [])
-            .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-            .slice(0, this.expectedArticleCount || 10);
-          
-          if (this.articles.length === 0) {
-            // If still no articles, show message
-            this.error = `No se encontraron artículos para "${this.alertKeyword}". Los artículos específicos de la notificación ya no están disponibles.`;
-          } else {
-            console.log(`Showing ${this.articles.length} most recent articles as fallback`);
-          }
+          // No exact matches, show the most recent articles as fallback
+          console.log('No exact matches found, showing most recent articles for this keyword');
+          this.articles = (result.items || []).slice(0, this.expectedArticleCount || 10);
         }
         
         // Sort by published date (newest first)

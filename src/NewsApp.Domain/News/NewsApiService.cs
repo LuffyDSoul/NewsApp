@@ -1,6 +1,7 @@
 ﻿using NewsAPI;
 using NewsAPI.Constants;
 using NewsAPI.Models;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,22 +14,27 @@ namespace NewsApp.News
 {
     public class NewsApiService : INewsService
     {
+        private readonly string _newsApiKey;
+
+        public NewsApiService(IConfiguration configuration)
+        {
+            _newsApiKey = configuration["NewsApi:ApiKey"] ?? "";
+        }
+
         public async Task<ICollection<ArticleDto>> GetNewsAsync(string query)
         {
             ICollection<ArticleDto> responseList = new List<ArticleDto>();
 
             // init with your API key
-            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            var newsApiClient = new NewsApiClient(_newsApiKey);
             
             var articlesResponse = await newsApiClient.GetEverythingAsync(new EverythingRequest
             {
                 Q = query,
                 SortBy = SortBys.Popularity,
                 Language = Languages.EN,
-                // Mejorado: usar fecha más reciente para obtener noticias actuales
-                From = DateTime.Now.AddDays(-7), // Últimos 7 días en lugar de 1 mes
-                To = DateTime.Now, // Hasta hoy
-                PageSize = 20 // Aumentado a 20 para más resultados
+                From = DateTime.Now.AddDays(-2),
+                PageSize = 20
             });
 
             // Mejorado: manejar errores apropiadamente

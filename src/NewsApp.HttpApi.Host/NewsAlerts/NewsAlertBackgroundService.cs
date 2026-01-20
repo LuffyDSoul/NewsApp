@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -18,15 +19,18 @@ namespace NewsApp.NewsAlerts.BackgroundWorkers
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<NewsAlertBackgroundService> _logger;
+        private readonly IConfiguration _configuration;
         private const int CheckIntervalMinutes = 10; // Check every 10 minutes
         private const int MaxArticlesPerCategory = 20;
 
         public NewsAlertBackgroundService(
             IServiceProvider serviceProvider,
-            ILogger<NewsAlertBackgroundService> logger)
+            ILogger<NewsAlertBackgroundService> logger,
+            IConfiguration configuration)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
+            _configuration = configuration;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -72,7 +76,8 @@ namespace NewsApp.NewsAlerts.BackgroundWorkers
             var unitOfWorkManager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
             
             // Create NewsAPI client
-            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            var newsApiKey = _configuration["NewsApi:ApiKey"] ?? "";
+            var newsApiClient = new NewsApiClient(newsApiKey);
 
             using var uow = unitOfWorkManager.Begin(requiresNew: true, isTransactional: true);
 
