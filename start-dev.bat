@@ -10,7 +10,7 @@ timeout /t 5
 
 echo Starting Angular Frontend...
 cd "..\..\NewsApp.Angular"
-start "Frontend" cmd /c "npm install && ng serve"
+start "Frontend" cmd /c "npm start"
 
 echo.
 echo Backend running at: https://localhost:44341

@@ -114,4 +114,12 @@ export class NewsAlertService {
   markAllAsRead(): Observable<void> {
     return this.http.put<void>(`${this.baseUrl}/notifications/read-all`, {});
   }
+
+  // Testear una alerta (ejecutarla manualmente)
+  testAlert(id: string): Observable<{ success: boolean; message: string; articlesFound?: number }> {
+    return this.http.post<{ success: boolean; message: string; articlesFound?: number }>(
+      `${this.baseUrl}/${id}/test`, 
+      {}
+    );
+  }
 }

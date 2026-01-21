@@ -3,17 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Users;
 using Volo.Abp.Guids;
+using Volo.Abp.Identity;
 using NewsApp.Domain.Alerts;
 using NewsApp.Domain.Alerts.Repositories;
 using NewsApp.Domain.Alerts.Services;
 using NewsApp.Domain.News.Services;
 using NewsApp.News;
 using NewsApp.Permissions;
+using NewsApp.Email;
 using NewsApp.Application; // Add this using directive
 
 namespace NewsApp.Alerts
@@ -118,6 +121,8 @@ namespace NewsApp.Alerts
         private readonly IBackgroundJobManager _backgroundJobManager;
         private readonly ICurrentUser _currentUser;
         private readonly IGuidGenerator _guidGenerator;
+        private readonly IIdentityUserRepository _userRepository;
+        private readonly IEmailService _emailService;
 
         public AlertAppService(
             IAlertRepository alertRepository,
@@ -126,7 +131,9 @@ namespace NewsApp.Alerts
             IAlertScheduler alertScheduler,
             IBackgroundJobManager backgroundJobManager,
             ICurrentUser currentUser,
-            IGuidGenerator guidGenerator)
+            IGuidGenerator guidGenerator,
+            IIdentityUserRepository userRepository,
+            IEmailService emailService)
         {
             _alertRepository = alertRepository;
             _alertResultRepository = alertResultRepository;
@@ -135,6 +142,8 @@ namespace NewsApp.Alerts
             _backgroundJobManager = backgroundJobManager;
             _currentUser = currentUser;
             _guidGenerator = guidGenerator;
+            _userRepository = userRepository;
+            _emailService = emailService;
         }
 
         [Authorize(NewsAppPermissions.Alerts.Default)]
@@ -659,9 +668,51 @@ namespace NewsApp.Alerts
 
         private async Task SendAlertNotificationsAsync(Alert alert, List<Domain.News.NewsArticle> articles)
         {
-            // This would integrate with your notification system
-            // For now, just a placeholder
-            await Task.CompletedTask;
+            try
+            {
+                // Get user information
+                var user = await _userRepository.GetAsync(alert.UserId);
+                
+                // Check if email is confirmed
+                if (!user.EmailConfirmed || string.IsNullOrEmpty(user.Email))
+                {
+                    Logger.LogWarning("Cannot send alert notification: user {UserId} email is not confirmed or empty", alert.UserId);
+                    return;
+                }
+
+                // Check if email notifications are enabled for this alert
+                if (!alert.EmailNotificationEnabled)
+                {
+                    Logger.LogDebug("Email notifications are disabled for alert {AlertId}", alert.Id);
+                    return;
+                }
+
+                // Convert NewsArticle to ArticleDto for email
+                var articleDtos = articles.Take(10).Select(a => new News.ArticleDto
+                {
+                    Author = a.Author,
+                    Title = a.Title ?? string.Empty,
+                    Description = a.Description,
+                    Url = a.Url ?? string.Empty,
+                    UrlToImage = a.UrlToImage,
+                    PublishedAt = a.PublishedAt,
+                    Content = a.Content
+                }).ToList();
+
+                // Send notification email
+                await _emailService.SendNewsNotificationAsync(
+                    to: user.Email,
+                    userName: user.UserName ?? user.Email,
+                    themeName: $"Alerta: {alert.Name}",
+                    articles: articleDtos);
+
+                Logger.LogInformation("Alert notification sent successfully to {Email} for alert {AlertName}", user.Email, alert.Name);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to send alert notification for alert {AlertId}", alert.Id);
+                // Don't throw - notification failure shouldn't fail alert execution
+            }
         }
 
         private static List<Domain.News.NewsArticle> FilterArticlesByExcludeKeywords(

@@ -65,6 +65,7 @@ public class NewsAppDbContext :
     public DbSet<ReadingList> ReadingLists { get; set; }
     public DbSet<SavedArticle> SavedArticles { get; set; }
     public DbSet<UserPreferences> UserPreferences { get; set; }
+    public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
     public DbSet<NewsAlertList> NewsAlertLists { get; set; }
     public DbSet<NewsAlertNotification> NewsAlertNotifications { get; set; }
 
@@ -176,6 +177,22 @@ public class NewsAppDbContext :
             
             // Index for user queries
             b.HasIndex(x => x.UserId).IsUnique();
+        });
+
+        // Email Verification Tokens
+        builder.Entity<EmailVerificationToken>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "EmailVerificationTokens", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            
+            b.Property(x => x.NewEmail).IsRequired().HasMaxLength(256);
+            b.Property(x => x.Token).IsRequired().HasMaxLength(500);
+            
+            // Indexes for performance
+            b.HasIndex(x => x.UserId);
+            b.HasIndex(x => x.Token).IsUnique();
+            b.HasIndex(x => new { x.UserId, x.NewEmail, x.IsUsed });
+            b.HasIndex(x => x.ExpirationDate);
         });
 
         // News Alert Lists

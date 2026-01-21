@@ -28,6 +28,7 @@ namespace NewsApp.Controllers
         }
 
         [HttpGet("get-top-headlines")]
+        [AllowAnonymous] // Permitir acceso sin autenticación para noticias públicas
         public async Task<PagedResultDto<NewsArticleDto>> GetTopHeadlinesAsync(
             [FromQuery] string? category = null,
             [FromQuery] string? country = null,
@@ -45,6 +46,7 @@ namespace NewsApp.Controllers
         }
 
         [HttpGet("get-from-sources")]
+        [AllowAnonymous] // Permitir acceso sin autenticación
         public async Task<PagedResultDto<NewsArticleDto>> GetFromSourcesAsync(
             [FromQuery] string sources,
             [FromQuery] string language = "en",
@@ -55,6 +57,7 @@ namespace NewsApp.Controllers
         }
 
         [HttpGet("get-sources")]
+        [AllowAnonymous] // Permitir acceso sin autenticación
         public async Task<List<NewsSourceDto>> GetSourcesAsync(
             [FromQuery] string? language = null,
             [FromQuery] string? country = null)
@@ -63,6 +66,7 @@ namespace NewsApp.Controllers
         }
 
         [HttpGet("get-latest")]
+        [AllowAnonymous] // Permitir acceso sin autenticación
         public async Task<List<NewsArticleDto>> GetLatestAsync(
             [FromQuery] int count = 10,
             [FromQuery] string? languageCode = null)

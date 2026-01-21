@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { UserProfileService } from '../../core/services/user-profile.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { 
   UserProfile, 
   UpdateUserProfile, 
@@ -42,6 +43,12 @@ import {
             [class.active]="activeTab === 'preferences'"
             (click)="activeTab = 'preferences'">
             Preferencias
+          </button>
+          <button 
+            class="tab" 
+            [class.active]="activeTab === 'notifications'"
+            (click)="activeTab = 'notifications'">
+            Notificaciones
           </button>
         </div>
 
@@ -98,9 +105,17 @@ import {
                   <ng-template #unconfirmedEmail>
                     <div class="email-status">
                       <span class="status-unconfirmed">⚠ Correo no confirmado</span>
-                      <button type="button" class="confirm-email-btn" (click)="sendEmailConfirmation()">
+                      <button 
+                        type="button" 
+                        class="confirm-email-btn" 
+                        (click)="sendEmailConfirmation()"
+                        [disabled]="hasChanges()"
+                        [title]="hasChanges() ? 'Guarda los cambios primero' : 'Enviar confirmación'">
                         Enviar confirmación
                       </button>
+                      <small class="help-text" *ngIf="hasChanges()" style="color: #ff6b6b; font-size: 0.85em; margin-top: 0.25rem; display: block;">
+                        💡 Guarda los cambios antes de enviar la confirmación
+                      </small>
                     </div>
                   </ng-template>
                   <div class="error-message" *ngIf="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">
@@ -261,6 +276,55 @@ import {
                 </button>
               </div>
             </form>
+          </div>
+
+          <!-- Notificaciones -->
+          <div *ngIf="activeTab === 'notifications'" class="tab-panel">
+            <h3>Notificaciones por Email</h3>
+            
+            <div class="notification-status">
+              <div *ngIf="userProfile?.emailConfirmed; else emailNotConfirmed" class="status-card confirmed">
+                <div class="status-icon">✓</div>
+                <div class="status-content">
+                  <h4>Email Confirmado</h4>
+                  <p>Tu email <strong>{{ userProfile?.email }}</strong> está verificado y listo para recibir notificaciones.</p>
+                </div>
+              </div>
+              <ng-template #emailNotConfirmed>
+                <div class="status-card not-confirmed">
+                  <div class="status-icon">⚠</div>
+                  <div class="status-content">
+                    <h4>Email No Confirmado</h4>
+                    <p>Debes confirmar tu email antes de recibir notificaciones. Ve a la pestaña "Información Personal" y haz clic en "Enviar confirmación".</p>
+                  </div>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="notification-test-section">
+              <h4>Probar Notificaciones</h4>
+              <p>Envía un correo de prueba para verificar que las notificaciones funcionan correctamente.</p>
+              
+              <button 
+                class="btn btn-primary" 
+                (click)="sendTestNotification()"
+                [disabled]="isLoading || !userProfile?.emailConfirmed">
+                <span *ngIf="isLoading">Enviando...</span>
+                <span *ngIf="!isLoading">📧 Enviar Email de Prueba</span>
+              </button>
+
+              <small class="help-text" *ngIf="!userProfile?.emailConfirmed" style="color: #ff6b6b; display: block; margin-top: 0.5rem;">
+                💡 Debes confirmar tu email antes de poder recibir notificaciones
+              </small>
+            </div>
+
+            <div class="notification-info">
+              <h4>¿Cuándo recibiré notificaciones?</h4>
+              <ul>
+                <li><strong>Alertas de Noticias:</strong> Cuando tus alertas configuradas encuentren nuevas noticias que coincidan con tus criterios</li>
+                <li><strong>Resumen Diario:</strong> Un resumen de las noticias más importantes del día (si está habilitado)</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -515,6 +579,76 @@ import {
       border: 1px solid #f5c6cb;
     }
 
+    .notification-status {
+      margin-bottom: 2rem;
+    }
+
+    .status-card {
+      display: flex;
+      align-items: center;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+    }
+
+    .status-card.confirmed {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status-card.not-confirmed {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+    }
+
+    .status-icon {
+      font-size: 3rem;
+      margin-right: 1.5rem;
+    }
+
+    .status-content h4 {
+      margin: 0 0 0.5rem 0;
+      color: #333;
+    }
+
+    .status-content p {
+      margin: 0;
+      color: #666;
+    }
+
+    .notification-test-section {
+      background: #f8f9fa;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+    }
+
+    .notification-test-section h4 {
+      margin-top: 0;
+    }
+
+    .notification-info {
+      background: #e7f3ff;
+      padding: 1.5rem;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+
+    .notification-info h4 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .notification-info ul {
+      margin: 0.5rem 0 0 1.5rem;
+      padding: 0;
+    }
+
+    .notification-info li {
+      margin-bottom: 0.5rem;
+      color: #666;
+    }
+
     @media (max-width: 768px) {
       .profile-container {
         padding: 1rem;
@@ -535,12 +669,12 @@ import {
   `]
 })
 export class UserProfileComponent implements OnInit, OnDestroy {
-  activeTab: 'profile' | 'password' | 'preferences' = 'profile';
-  userProfile: UserProfile | null = null;
-  availableLanguages: NewsLanguage[] = [];
-  isLoading = false;
-  successMessage = '';
-  errorMessage = '';
+activeTab: 'profile' | 'password' | 'preferences' | 'notifications' = 'profile';
+userProfile: UserProfile | null = null;
+availableLanguages: NewsLanguage[] = [];
+isLoading = false;
+successMessage = '';
+errorMessage = '';
 
   // Edit mode tracking
   editMode = {
@@ -562,6 +696,7 @@ export class UserProfileComponent implements OnInit, OnDestroy {
 
   private fb = inject(FormBuilder);
   private userProfileService = inject(UserProfileService);
+  private notificationService = inject(NotificationService);
 
   constructor() {
     this.profileForm = this.createProfileForm();
@@ -710,7 +845,9 @@ export class UserProfileComponent implements OnInit, OnDestroy {
               });
             }
             if (result.requiresEmailConfirmation) {
-              this.showError('Se ha enviado un correo de confirmación a tu nueva dirección.');
+              setTimeout(() => {
+                this.showSuccess('✅ Perfil actualizado. 📧 No olvides hacer clic en "Enviar confirmación" para confirmar tu nuevo email.');
+              }, 100);
             }
           } else {
             this.showError(result.message);
@@ -800,6 +937,31 @@ export class UserProfileComponent implements OnInit, OnDestroy {
         error: (error: any) => {
           this.showError('Error al enviar la confirmación de correo');
           console.error('Error sending email confirmation:', error);
+        }
+      });
+  }
+
+  sendTestNotification(): void {
+    if (!this.userProfile?.emailConfirmed) {
+      this.showError('Debes confirmar tu email antes de recibir notificaciones');
+      return;
+    }
+
+    this.isLoading = true;
+    this.clearMessages();
+
+    this.notificationService.sendTestNotification()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.isLoading = false;
+          this.showSuccess('¡Email de prueba enviado! Revisa tu bandeja de entrada en ' + this.userProfile?.email);
+        },
+        error: (error: any) => {
+          this.isLoading = false;
+          const errorMessage = error.error?.error?.message || 'Error al enviar el email de prueba';
+          this.showError(errorMessage);
+          console.error('Error sending test notification:', error);
         }
       });
   }

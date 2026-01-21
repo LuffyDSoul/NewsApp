@@ -24,5 +24,8 @@ namespace NewsApp.NewsAlerts
         Task MarkNotificationAsReadAsync(Guid id);
         
         Task MarkAllNotificationsAsReadAsync();
+        
+        Task<bool> TestAlertAsync(Guid id);
     }
 }
+

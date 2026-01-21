@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NewsAlertService, NewsAlertListDto, CreateNewsAlertListDto, UpdateNewsAlertListDto } from '../../../core/services/news-alert.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-alert-list-management',
@@ -45,9 +46,15 @@ export class AlertListManagementComponent implements OnInit {
   ];
 
   alertNotificationCounts: { [alertId: string]: number } = {};
+  
+  // Email notifications
+  sendingTestEmail = false;
+  emailSuccessMessage = '';
+  emailErrorMessage = '';
 
   constructor(
     private newsAlertService: NewsAlertService,
+    private notificationService: NotificationService,
     private router: Router
   ) {}
 
@@ -234,5 +241,77 @@ export class AlertListManagementComponent implements OnInit {
     if (!date) return 'Never';
     const d = new Date(date);
     return d.toLocaleString();
+  }
+
+  sendTestEmailNotification(): void {
+    this.sendingTestEmail = true;
+    this.emailSuccessMessage = '';
+    this.emailErrorMessage = '';
+
+    this.notificationService.sendTestNotification().subscribe({
+      next: () => {
+        this.sendingTestEmail = false;
+        this.emailSuccessMessage = '✅ Test email sent successfully! Check your inbox (and spam folder).';
+        
+        // Clear message after 5 seconds
+        setTimeout(() => {
+          this.emailSuccessMessage = '';
+        }, 5000);
+      },
+      error: (error) => {
+        this.sendingTestEmail = false;
+        this.emailErrorMessage = '❌ Error sending test email: ' + (error.error?.error?.message || 'Unknown error');
+        console.error('Error sending test email:', error);
+        
+        // Clear message after 5 seconds
+        setTimeout(() => {
+          this.emailErrorMessage = '';
+        }, 5000);
+      }
+    });
+  }
+
+  testAlert(alert: NewsAlertListDto): void {
+    if (!alert.isActive) {
+      window.alert('This alert is inactive. Please activate it first.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Test alert "${alert.name}"?\n\nThis will execute the alert now and send you an email if news articles are found.`);
+    if (!confirmed) return;
+
+    this.loading = true;
+    this.emailSuccessMessage = '';
+    this.emailErrorMessage = '';
+
+    this.newsAlertService.testAlert(alert.id).subscribe({
+      next: (result) => {
+        this.loading = false;
+        if (result.success) {
+          this.emailSuccessMessage = `✅ ${result.message}${result.articlesFound ? ` (${result.articlesFound} articles found)` : ''}`;
+          
+          // Reload alerts to update last checked time
+          this.loadAlerts();
+          
+          setTimeout(() => {
+            this.emailSuccessMessage = '';
+          }, 7000);
+        } else {
+          this.emailErrorMessage = `❌ ${result.message}`;
+          setTimeout(() => {
+            this.emailErrorMessage = '';
+          }, 5000);
+        }
+      },
+      error: (error) => {
+        this.loading = false;
+        this.emailErrorMessage = '❌ Error testing alert: ' + (error.error?.error?.message || 'Unknown error');
+        console.error('Error testing alert:', error);
+        
+        setTimeout(() => {
+          this.emailErrorMessage = '';
+        }, 5000);
+      }
+    });
   }
 }

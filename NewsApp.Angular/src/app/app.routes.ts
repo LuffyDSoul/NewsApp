@@ -16,6 +16,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)
   },
   {
+    path: 'confirm-email',
+    loadComponent: () => import('./features/confirm-email/confirm-email.component').then(m => m.ConfirmEmailComponent)
+  },
+  {
     path: 'news',
     loadComponent: () => import('./features/news/news-list/news-list.component').then(m => m.NewsListComponent),
     canActivate: [AuthGuard]  // Proteger ruta de noticias

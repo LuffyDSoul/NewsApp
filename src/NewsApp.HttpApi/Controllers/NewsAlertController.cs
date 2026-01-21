@@ -100,5 +100,43 @@ namespace NewsApp.Controllers
         {
             await _newsAlertAppService.MarkAllNotificationsAsReadAsync();
         }
+
+        /// <summary>
+        /// Test an alert by executing it immediately
+        /// </summary>
+        [HttpPost("{id}/test")]
+        public async Task<IActionResult> TestAlertAsync(Guid id)
+        {
+            try
+            {
+                var success = await _newsAlertAppService.TestAlertAsync(id);
+                return Ok(new
+                {
+                    success = success,
+                    message = "Alert tested successfully! Check your email inbox for the results."
+                });
+            }
+            catch (Volo.Abp.BusinessException ex)
+            {
+                // Return 200 with success=false to show the message in the frontend
+                return Ok(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                // Return 200 with success=false for other errors
+                return Ok(new
+                {
+                    success = false,
+                    message = "An error occurred while testing the alert. Please try again."
+                });
+            }
+        }
     }
 }
+
+
+
