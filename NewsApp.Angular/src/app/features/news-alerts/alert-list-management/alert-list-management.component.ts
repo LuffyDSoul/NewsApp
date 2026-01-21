@@ -58,6 +58,29 @@ export class AlertListManagementComponent implements OnInit {
     private router: Router
   ) {}
 
+  checkAlertsNow(): void {
+    this.loading = true;
+    this.newsAlertService.triggerManualCheck().subscribe({
+      next: (response) => {
+        this.loading = false;
+        // Reload alerts and notification counts after manual check
+        this.loadAlerts();
+        
+        // Trigger refresh of notification panel
+        this.newsAlertService.refreshNotifications();
+        
+        // Show success message
+        const message = response.message || 'Alert check completed successfully!';
+        alert(`Alert check completed!\n\n${message}\n\nPlease check your notifications panel for new alerts.`);
+      },
+      error: (error) => {
+        console.error('Error checking alerts:', error);
+        alert('Error checking alerts: ' + (error.error?.error?.message || 'Unknown error'));
+        this.loading = false;
+      }
+    });
+  }
+
   ngOnInit(): void {
     this.loadAlerts();
   }
@@ -96,13 +119,9 @@ export class AlertListManagementComponent implements OnInit {
     // Navigate to alert-news page with alert filters
     const queryParams: any = {
       alertName: alert.name,
+      keyword: alert.keyword || '',
       language: alert.languageCode
     };
-    
-    // Add keyword if present
-    if (alert.keyword && alert.keyword.trim()) {
-      queryParams.keyword = alert.keyword.trim();
-    }
     
     this.router.navigate(['/alert-news'], { queryParams });
   }
@@ -123,6 +142,7 @@ export class AlertListManagementComponent implements OnInit {
   openEditModal(alert: NewsAlertListDto): void {
     this.editMode = true;
     this.editingAlertId = alert.id;
+    
     this.currentAlert = {
       name: alert.name,
       description: alert.description || '',
@@ -131,6 +151,7 @@ export class AlertListManagementComponent implements OnInit {
       keyword: alert.keyword || '',
       isActive: alert.isActive
     };
+    
     this.showModal = true;
   }
 
@@ -140,13 +161,19 @@ export class AlertListManagementComponent implements OnInit {
   }
 
   saveAlert(): void {
-    if (!this.currentAlert.name || !this.currentAlert.keyword?.trim()) {
-      alert('Please enter a name and at least one keyword');
+    if (!this.currentAlert.name) {
+      alert('Please enter a name');
       return;
     }
 
-    // Set categories to empty or single default value to satisfy backend validation
+    if (!this.currentAlert.keyword || !this.currentAlert.keyword.trim()) {
+      alert('Keyword is required');
+      return;
+    }
+
+    // Always set categories to 'general' as it's no longer used
     this.currentAlert.categories = 'general';
+    this.currentAlert.keyword = this.currentAlert.keyword.trim();
 
     this.loading = true;
 
@@ -240,7 +267,18 @@ export class AlertListManagementComponent implements OnInit {
   formatDate(date?: Date | string): string {
     if (!date) return 'Never';
     const d = new Date(date);
-    return d.toLocaleString();
+    
+    // Format: Jan 18, 2026 at 3:45 PM
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    };
+    
+    return d.toLocaleString('en-US', options);
   }
 
   sendTestEmailNotification(): void {

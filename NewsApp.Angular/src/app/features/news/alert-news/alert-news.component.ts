@@ -21,13 +21,17 @@ export class AlertNewsComponent implements OnInit {
   
   // Filter parameters from alert
   alertKeyword = '';
-  alertCategory = '';
   alertLanguage = 'en';
   alertName = '';
   
+  // Notification parameters
+  fromNotification = false;
+  notificationId: string | null = null;
+  expectedArticleCount = 0;
+  
   // Pagination
   currentPage = 1;
-  pageSize = 10;
+  pageSize = 5;
   hasMoreNews = true;
   loadingMore = false;
   
@@ -45,6 +49,10 @@ export class AlertNewsComponent implements OnInit {
   newListDescription = '';
   isCreatingList = false;
 
+  // API call limiter - 5 calls per keyword
+  private apiCallCounts: Map<string, number> = new Map();
+  private readonly MAX_API_CALLS_PER_FILTER = 5;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -59,17 +67,36 @@ export class AlertNewsComponent implements OnInit {
     // Get filter parameters from query params
     this.route.queryParams.subscribe(params => {
       this.alertKeyword = params['keyword'] || '';
-      this.alertCategory = params['category'] || '';
       this.alertLanguage = params['language'] || 'en';
       this.alertName = params['alertName'] || 'Alert';
       
-      // Load news with filters
-      this.loadAlertNews();
+      // Check if coming from notification
+      this.fromNotification = params['fromNotification'] === 'true';
+      this.notificationId = params['notificationId'] || null;
+      this.expectedArticleCount = parseInt(params['articleCount']) || 0;
+      
+      // Check if we have specific article URLs from the notification
+      const articleUrls = params['articleUrls'] || '';
+      
+      if (this.fromNotification && articleUrls) {
+        // Load specific articles from the notification
+        this.loadArticlesByUrls(articleUrls);
+      } else {
+        // Adjust pageSize if coming from notification to show exact number of articles
+        if (this.fromNotification && this.expectedArticleCount > 0) {
+          this.pageSize = this.expectedArticleCount;
+          console.log(`Coming from notification: expecting ${this.expectedArticleCount} articles`);
+        }
+        
+        // Load news with filters
+        this.loadAlertNews();
+      }
     });
   }
 
   loadAlertNews(): void {
-    if (!this.alertKeyword) {
+    // Validate that we have a keyword
+    if (!this.alertKeyword || !this.alertKeyword.trim()) {
       this.error = 'No keyword specified for this alert';
       return;
     }
@@ -78,10 +105,31 @@ export class AlertNewsComponent implements OnInit {
     this.error = null;
     this.currentPage = 1;
     
-    // Use searchLocalNews which will search by keyword
-    this.newsService.searchLocalNews(this.alertKeyword, this.alertLanguage, 0, this.pageSize).subscribe({
+    // When coming from "View News" (not a notification), always get fresh recent news
+    // Use a larger pageSize to ensure we get recent articles
+    const effectivePageSize = this.fromNotification ? this.pageSize : 20;
+    
+    const filterKey = `keyword_${this.alertKeyword}`;
+    const currentCount = this.apiCallCounts.get(filterKey) || 0;
+    
+    if (currentCount >= this.MAX_API_CALLS_PER_FILTER) {
+      this.error = `Se ha alcanzado el límite de ${this.MAX_API_CALLS_PER_FILTER} llamadas para: ${this.alertKeyword}`;
+      this.loading = false;
+      return;
+    }
+    
+    this.apiCallCounts.set(filterKey, currentCount + 1);
+    
+    // For keywords, use getTopHeadlines which calls NewsAPI directly for fresh results
+    this.newsService.getTopHeadlines(this.alertKeyword, undefined, this.alertLanguage, 1, effectivePageSize).subscribe({
       next: (result: PagedResultDto<NewsArticleDto>) => {
         this.articles = result.items || [];
+        // Sort by published date (newest first)
+        this.articles.sort((a, b) => {
+          const dateA = new Date(a.publishedAt).getTime();
+          const dateB = new Date(b.publishedAt).getTime();
+          return dateB - dateA;
+        });
         this.hasMoreNews = result.items?.length >= this.pageSize;
         this.loading = false;
       },
@@ -91,10 +139,73 @@ export class AlertNewsComponent implements OnInit {
     });
   }
 
-  loadMoreNews(): void {
-    if (this.loadingMore || !this.hasMoreNews) {
+  loadArticlesByUrls(urlsString: string): void {
+    if (!urlsString) {
+      this.error = 'No article URLs provided';
       return;
     }
+
+    this.loading = true;
+    this.error = null;
+
+    // Split the comma-separated URLs
+    const urls = urlsString.split(',').map(url => url.trim()).filter(url => url);
+    
+    console.log(`Loading ${urls.length} specific articles from notification`);
+    console.log('Article URLs:', urls);
+
+    // Get fresh articles from API using the keyword
+    this.newsService.getTopHeadlines(this.alertKeyword, undefined, this.alertLanguage, 1, 20).subscribe({
+      next: (result: PagedResultDto<NewsArticleDto>) => {
+        console.log(`Loaded ${result.items?.length || 0} articles from API`);
+        
+        // Try to match articles by URL
+        let matchedArticles = (result.items || []).filter(article => urls.includes(article.url));
+        
+        if (matchedArticles.length > 0) {
+          // Found the specific articles
+          console.log(`Found ${matchedArticles.length} matching articles from notification`);
+          this.articles = matchedArticles;
+        } else {
+          // No exact matches, show the most recent articles as fallback
+          console.log('No exact matches found, showing most recent articles for this keyword');
+          this.articles = (result.items || []).slice(0, this.expectedArticleCount || 10);
+        }
+        
+        // Sort by published date (newest first)
+        this.articles.sort((a, b) => {
+          const dateA = new Date(a.publishedAt).getTime();
+          const dateB = new Date(b.publishedAt).getTime();
+          return dateB - dateA;
+        });
+        
+        this.hasMoreNews = false; // No pagination for notification articles
+        this.loading = false;
+        console.log(`Showing ${this.articles.length} articles (expected: ${this.expectedArticleCount})`);
+      },
+      error: (err) => {
+        console.error('Error loading articles:', err);
+        this.handleError(err);
+      }
+    });
+  }
+
+  loadMoreNews(): void {
+    if (this.loadingMore || !this.hasMoreNews || !this.alertKeyword) {
+      return;
+    }
+
+    // Check API call limit
+    const filterKey = `keyword_${this.alertKeyword}`;
+    const currentCount = this.apiCallCounts.get(filterKey) || 0;
+    
+    if (currentCount >= this.MAX_API_CALLS_PER_FILTER) {
+      this.hasMoreNews = false;
+      return;
+    }
+    
+    // Increment call count
+    this.apiCallCounts.set(filterKey, currentCount + 1);
 
     this.loadingMore = true;
     const skipCount = this.currentPage * this.pageSize;
@@ -102,6 +213,12 @@ export class AlertNewsComponent implements OnInit {
     this.newsService.searchLocalNews(this.alertKeyword, this.alertLanguage, skipCount, this.pageSize).subscribe({
       next: (result: PagedResultDto<NewsArticleDto>) => {
         const newArticles = result.items || [];
+        // Sort new articles by date
+        newArticles.sort((a, b) => {
+          const dateA = new Date(a.publishedAt).getTime();
+          const dateB = new Date(b.publishedAt).getTime();
+          return dateB - dateA;
+        });
         this.articles = [...this.articles, ...newArticles];
         this.currentPage++;
         this.hasMoreNews = newArticles.length >= this.pageSize;
@@ -311,18 +428,17 @@ export class AlertNewsComponent implements OnInit {
 
   formatDate(dateString: string | Date): string {
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays === 0) {
-      return 'Today';
-    } else if (diffDays === 1) {
-      return 'Yesterday';
-    } else if (diffDays < 7) {
-      return `${diffDays} days ago`;
-    } else {
-      return date.toLocaleDateString();
-    }
+    // Format: Jan 18, 2026 at 3:45 PM
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    };
+    
+    return date.toLocaleString('en-US', options);
   }
 }

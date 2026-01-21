@@ -63,25 +63,27 @@ namespace NewsApp.NewsAlerts
         {
             var userId = CurrentUser.Id ?? throw new BusinessException("User is not authenticated");
             
-            // Check if alert with same name already exists for this user
+            // Check if active alert with same name already exists for this user (excluding soft-deleted ones)
             var existingAlert = await _alertListRepository.GetByNameAsync(userId, input.Name);
-            if (existingAlert != null)
+            if (existingAlert != null && !existingAlert.IsDeleted)
             {
                 throw new BusinessException("An alert with this name already exists");
             }
             
-            // Validate categories (should be comma-separated)
-            var categories = input.Categories.Split(',', StringSplitOptions.RemoveEmptyEntries);
-            if (categories.Length == 0)
+            // Validate that keyword is provided
+            if (string.IsNullOrWhiteSpace(input.Keyword))
             {
-                throw new BusinessException("At least one category is required");
+                throw new BusinessException("Keyword is required");
             }
+            
+            // Use "general" as placeholder for categories since we're keyword-only now
+            var categories = "general";
             
             var alert = new NewsAlertList(
                 GuidGenerator.Create(),
                 userId,
                 input.Name,
-                input.Categories.Trim(),
+                categories,
                 input.LanguageCode.ToLower(),
                 input.Description?.Trim(),
                 input.Keyword?.Trim(),
@@ -104,23 +106,25 @@ namespace NewsApp.NewsAlerts
                 throw new BusinessException("You can only update your own alerts");
             }
             
-            // Check if another alert with same name exists
+            // Check if another active alert with same name exists (excluding soft-deleted ones)
             var existingAlert = await _alertListRepository.GetByNameAsync(alert.UserId, input.Name);
-            if (existingAlert != null && existingAlert.Id != id)
+            if (existingAlert != null && existingAlert.Id != id && !existingAlert.IsDeleted)
             {
                 throw new BusinessException("An alert with this name already exists");
             }
             
-            // Validate categories
-            var categories = input.Categories.Split(',', StringSplitOptions.RemoveEmptyEntries);
-            if (categories.Length == 0)
+            // Validate that keyword is provided
+            if (string.IsNullOrWhiteSpace(input.Keyword))
             {
-                throw new BusinessException("At least one category is required");
+                throw new BusinessException("Keyword is required");
             }
+            
+            // Use "general" as placeholder for categories since we're keyword-only now
+            var categories = "general";
             
             alert.Update(
                 input.Name,
-                input.Categories.Trim(),
+                categories,
                 input.LanguageCode.ToLower(),
                 input.Description?.Trim(),
                 input.Keyword?.Trim(),

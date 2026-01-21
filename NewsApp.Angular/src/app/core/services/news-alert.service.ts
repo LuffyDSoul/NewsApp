@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
@@ -52,6 +52,7 @@ export interface NewsAlertNotificationDto {
   emailSentAt?: Date;
   newestArticleDate: Date;
   creationTime: Date;
+  articleUrls: string;
 }
 
 @Injectable({
@@ -59,8 +60,19 @@ export interface NewsAlertNotificationDto {
 })
 export class NewsAlertService {
   private readonly baseUrl = `${environment.apiUrl}/news-alerts`;
+  
+  // Subject to notify components when notifications should be refreshed
+  private notificationsRefresh$ = new Subject<void>();
+  
+  // Observable for components to subscribe to
+  onNotificationsRefresh = this.notificationsRefresh$.asObservable();
 
   constructor(private http: HttpClient) {}
+
+  // Method to trigger refresh
+  refreshNotifications(): void {
+    this.notificationsRefresh$.next();
+  }
 
   // Obtener mis alertas
   getMyAlerts(isActive?: boolean): Observable<NewsAlertListDto[]> {
@@ -113,13 +125,5 @@ export class NewsAlertService {
   // Marcar todas como leídas
   markAllAsRead(): Observable<void> {
     return this.http.put<void>(`${this.baseUrl}/notifications/read-all`, {});
-  }
-
-  // Testear una alerta (ejecutarla manualmente)
-  testAlert(id: string): Observable<{ success: boolean; message: string; articlesFound?: number }> {
-    return this.http.post<{ success: boolean; message: string; articlesFound?: number }>(
-      `${this.baseUrl}/${id}/test`, 
-      {}
-    );
   }
 }

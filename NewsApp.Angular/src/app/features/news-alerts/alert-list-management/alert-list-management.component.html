@@ -65,7 +65,10 @@
 
         <div class="info-item" *ngIf="alert.keyword">
           <i class="fas fa-key"></i>
-          <span>Keyword: <strong>{{ alert.keyword }}</strong></span>
+          <span>
+            <span style="margin-right: 4px;">Keywords:</span>
+            <strong style="display: inline;">{{ alert.keyword }}</strong>
+          </span>
         </div>
 
         <div class="info-item" *ngIf="alert.lastCheckedAt">
@@ -88,9 +91,6 @@
         <button class="btn btn-view-news" (click)="viewAlertNews(alert)">
           <i class="fas fa-newspaper"></i>
           View News
-          <span class="notification-badge" *ngIf="alertNotificationCounts[alert.id] > 0">
-            {{ alertNotificationCounts[alert.id] }}
-          </span>
         </button>
       </div>
     </div>
@@ -147,12 +147,12 @@
         <input 
           id="alertKeyword"
           type="text" 
-          [(ngModel)]="currentAlert.keyword" 
+          [(ngModel)]="currentAlert.keyword"
           placeholder="e.g., AI, Artificial Intelligence, Machine Learning"
           maxlength="256"
           class="form-control"
           required>
-        <small class="form-text">Enter one or multiple keywords separated by commas. Multiple keywords will search with OR logic.</small>
+        <small class="form-text">✨ Enter keywords separated by commas (OR logic: articles matching ANY keyword).</small>
       </div>
 
       <div class="form-group">

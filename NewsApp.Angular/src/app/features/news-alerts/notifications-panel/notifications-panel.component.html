@@ -1,7 +1,7 @@
 <div class="notifications-wrapper">
   <!-- Bell Icon Button -->
   <button class="notification-bell" (click)="togglePanel()" [class.has-unread]="unreadCount > 0">
-    <i class="fas fa-bell"></i>
+    <i class="far fa-bell"></i>
     <span class="badge" *ngIf="unreadCount > 0">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
   </button>
 
@@ -102,10 +102,10 @@
     </div>
 
     <div class="panel-footer">
-      <a routerLink="/news-alerts" (click)="closePanel()" class="manage-link">
+      <button (click)="goToManageAlerts()" class="manage-link">
         <i class="fas fa-cog"></i>
         Manage Alerts
-      </a>
+      </button>
     </div>
   </div>
 

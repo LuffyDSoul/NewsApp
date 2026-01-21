@@ -1,6 +1,7 @@
 ﻿using NewsAPI;
 using NewsAPI.Constants;
 using NewsAPI.Models;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +14,13 @@ namespace NewsApp.News
 {
     public class NewsApiService : INewsService
     {
+        private readonly string _newsApiKey;
+
+        public NewsApiService(IConfiguration configuration)
+        {
+            _newsApiKey = configuration["NewsApi:ApiKey"] ?? "";
+        }
+
         public async Task<ICollection<ArticleDto>> GetNewsAsync(string query)
         {
             return await GetNewsAsync(query, language: null, from: DateTime.Now.AddDays(-7), to: DateTime.Now, pageSize: 20);

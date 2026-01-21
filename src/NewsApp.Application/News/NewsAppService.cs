@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Configuration;
 using Volo.Abp.Application.Dtos;
 using NewsApp.Permissions;
 using NewsAPI;
@@ -17,11 +18,15 @@ namespace NewsApp.News
     [Authorize]
     public class NewsAppService : NewsAppAppService, INewsAppService
     {
-        private readonly INewsService _newsService; // Usar solo la implementación simple que funciona
+        private readonly INewsService _newsService;
+        private readonly IConfiguration _configuration;
+        private readonly string _newsApiKey;
 
-        public NewsAppService(INewsService newsService)
+        public NewsAppService(INewsService newsService, IConfiguration configuration)
         {
             _newsService = newsService;
+            _configuration = configuration;
+            _newsApiKey = _configuration["NewsApi:ApiKey"] ?? "";
         }
 
         [Authorize(NewsAppPermissions.News.Default)]
@@ -44,46 +49,106 @@ namespace NewsApp.News
             int page = 1,
             int pageSize = 10)
         {
-            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            var newsApiClient = new NewsApiClient(_newsApiKey);
             
-            // Limit page size to prevent crashes
-            pageSize = Math.Min(pageSize, 10);
-            
-            // Build query based on category or use generic term
-            string query = "news";
-            if (!string.IsNullOrEmpty(category))
-            {
-                query = category;
-            }
-            
-            var everythingRequest = new EverythingRequest
-            {
-                Q = query,
-                Language = GetLanguageFromCode(language),
-                Page = page,
-                PageSize = pageSize,
-                SortBy = SortBys.PublishedAt
-            };
-
-            var headlines = await newsApiClient.GetEverythingAsync(everythingRequest);
-
             var articles = new List<NewsArticleDto>();
             
-            if (headlines.Status == Statuses.Ok && headlines.Articles != null)
+            // Valid NewsAPI categories
+            var validCategories = new[] { "business", "entertainment", "general", "health", "science", "sports", "technology" };
+            
+            // If no category provided, use top-headlines with US
+            if (string.IsNullOrEmpty(category))
             {
-                articles = headlines.Articles.Select(a => new NewsArticleDto
+                var headlinesRequest = new TopHeadlinesRequest
                 {
-                    Id = Guid.NewGuid(),
-                    Source = a.Source?.Name ?? "Unknown",
-                    Title = a.Title ?? "",
-                    Description = a.Description ?? "",
-                    Url = a.Url ?? "",
-                    UrlToImage = a.UrlToImage,
-                    PublishedAt = a.PublishedAt ?? DateTime.Now,
-                    Content = a.Content,
-                    Author = a.Author,
-                    LanguageCode = language
-                }).ToList();
+                    Country = Countries.US,
+                    PageSize = pageSize
+                };
+
+                var response = await newsApiClient.GetTopHeadlinesAsync(headlinesRequest);
+                
+                if (response.Status == Statuses.Ok && response.Articles != null)
+                {
+                    articles = response.Articles.Select(a => new NewsArticleDto
+                    {
+                        Id = Guid.NewGuid(),
+                        Source = a.Source?.Name ?? "Unknown",
+                        Title = a.Title ?? "",
+                        Description = a.Description ?? "",
+                        Url = a.Url ?? "",
+                        UrlToImage = a.UrlToImage,
+                        PublishedAt = a.PublishedAt ?? DateTime.Now,
+                        Content = a.Content,
+                        Author = a.Author,
+                        LanguageCode = language
+                    }).ToList();
+                }
+            }
+            // Check if category is valid
+            else if (validCategories.Contains(category.ToLower()))
+            {
+                // Use /top-headlines endpoint with category and country
+                var headlinesRequest = new TopHeadlinesRequest
+                {
+                    Category = MapToNewsAPICategory(category),
+                    Country = Countries.US,
+                    PageSize = pageSize
+                };
+
+                var response = await newsApiClient.GetTopHeadlinesAsync(headlinesRequest);
+                
+                if (response.Status == Statuses.Ok && response.Articles != null)
+                {
+                    articles = response.Articles.Select(a => new NewsArticleDto
+                    {
+                        Id = Guid.NewGuid(),
+                        Source = a.Source?.Name ?? "Unknown",
+                        Title = a.Title ?? "",
+                        Description = a.Description ?? "",
+                        Url = a.Url ?? "",
+                        UrlToImage = a.UrlToImage,
+                        PublishedAt = a.PublishedAt ?? DateTime.Now,
+                        Content = a.Content,
+                        Author = a.Author,
+                        LanguageCode = language
+                    }).ToList();
+                }
+            }
+            else
+            {
+                // Use /everything endpoint with a generic query or keyword search
+                var query = !string.IsNullOrEmpty(category) 
+                    ? ConvertToNewsApiQuery(category) 
+                    : "technology OR world OR business"; // Default query when no category
+                
+                var everythingRequest = new EverythingRequest
+                {
+                    Q = query,
+                    Language = GetLanguageFromCode(language),
+                    From = DateTime.UtcNow.AddDays(-3),
+                    Page = page,
+                    PageSize = pageSize,
+                    SortBy = SortBys.PublishedAt
+                };
+
+                var response = await newsApiClient.GetEverythingAsync(everythingRequest);
+                
+                if (response.Status == Statuses.Ok && response.Articles != null)
+                {
+                    articles = response.Articles.Select(a => new NewsArticleDto
+                    {
+                        Id = Guid.NewGuid(),
+                        Source = a.Source?.Name ?? "Unknown",
+                        Title = a.Title ?? "",
+                        Description = a.Description ?? "",
+                        Url = a.Url ?? "",
+                        UrlToImage = a.UrlToImage,
+                        PublishedAt = a.PublishedAt ?? DateTime.Now,
+                        Content = a.Content,
+                        Author = a.Author,
+                        LanguageCode = language
+                    }).ToList();
+                }
             }
 
             return new PagedResultDto<NewsArticleDto>(articles.Count, articles);
@@ -115,7 +180,7 @@ namespace NewsApp.News
             int page = 1,
             int pageSize = 10)
         {
-            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            var newsApiClient = new NewsApiClient(_newsApiKey);
             
             // Limit page size to prevent crashes
             pageSize = Math.Min(pageSize, 10);
@@ -124,6 +189,7 @@ namespace NewsApp.News
             {
                 Sources = sources.Split(',').Select(s => s.Trim()).ToList(),
                 Language = GetLanguageFromCode(language),
+                From = DateTime.UtcNow.AddDays(-2),
                 Page = page,
                 PageSize = pageSize
             });
@@ -153,13 +219,14 @@ namespace NewsApp.News
         [AllowAnonymous] // Temporal para pruebas
         public async Task<List<NewsSourceDto>> GetSourcesAsync(string? language = null, string? country = null)
         {
-            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            var newsApiClient = new NewsApiClient(_newsApiKey);
             
             // Use GetEverything to get a sample and extract sources
             var sampleRequest = new EverythingRequest
             {
                 Q = "news",
                 Language = GetLanguageFromCode(language ?? "en"),
+                From = DateTime.UtcNow.AddDays(-7),
                 PageSize = 20
             };
 
@@ -193,24 +260,22 @@ namespace NewsApp.News
         public async Task<List<NewsArticleDto>> GetLatestAsync(int count = 10, string? languageCode = null)
         {
             // Para propósitos de prueba, usar la API en lugar del repositorio
-            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            var newsApiClient = new NewsApiClient(_newsApiKey);
             
-            // Limit count to prevent crashes
-            count = Math.Min(count, 10);
-            
-            var headlines = await newsApiClient.GetEverythingAsync(new EverythingRequest
+            // Use top-headlines for latest news
+            var headlinesRequest = new TopHeadlinesRequest
             {
-                Q = "news",
-                Language = GetLanguageFromCode(languageCode ?? "en"),
-                PageSize = count,
-                SortBy = SortBys.PublishedAt
-            });
+                Country = Countries.US,
+                PageSize = count
+            };
+            
+            var response = await newsApiClient.GetTopHeadlinesAsync(headlinesRequest);
 
             var articles = new List<NewsArticleDto>();
             
-            if (headlines.Status == Statuses.Ok && headlines.Articles != null)
+            if (response.Status == Statuses.Ok && response.Articles != null)
             {
-                articles = headlines.Articles.Take(count).Select(a => new NewsArticleDto
+                articles = response.Articles.Take(count).Select(a => new NewsArticleDto
                 {
                     Id = Guid.NewGuid(),
                     Source = a.Source?.Name ?? "Unknown",
@@ -254,7 +319,7 @@ namespace NewsApp.News
         public async Task<PagedResultDto<NewsArticleDto>> GetBySourceAsync(string source, int skipCount = 0, int maxResultCount = 10)
         {
             // Para propósitos de prueba, usar GetEverything con el source como query
-            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            var newsApiClient = new NewsApiClient(_newsApiKey);
             
             // Limit max result count to prevent crashes
             maxResultCount = Math.Min(maxResultCount, 10);
@@ -263,6 +328,7 @@ namespace NewsApp.News
             {
                 Q = source,
                 Language = Languages.EN, // TODO: Add language parameter
+                From = DateTime.UtcNow.AddDays(-2),
                 PageSize = maxResultCount
             });
 
@@ -296,7 +362,7 @@ namespace NewsApp.News
             int maxResultCount = 10)
         {
             // Para propósitos de prueba, usar la API directamente
-            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            var newsApiClient = new NewsApiClient(_newsApiKey);
             
             // Limit max result count to prevent crashes
             maxResultCount = Math.Min(maxResultCount, 10);
@@ -308,26 +374,31 @@ namespace NewsApp.News
             {
                 Q = query,
                 Language = GetLanguageFromCode(languageCode ?? "en"),
-                PageSize = maxResultCount
+                From = DateTime.UtcNow.AddDays(-3),
+                PageSize = Math.Min(maxResultCount, 20)
             });
 
             var result = new List<NewsArticleDto>();
             
             if (articles.Status == Statuses.Ok && articles.Articles != null)
             {
-                result = articles.Articles.Skip(skipCount).Take(maxResultCount).Select(a => new NewsArticleDto
-                {
-                    Id = Guid.NewGuid(),
-                    Source = a.Source?.Name ?? "Unknown",
-                    Title = a.Title ?? "",
-                    Description = a.Description ?? "",
-                    Url = a.Url ?? "",
-                    UrlToImage = a.UrlToImage,
-                    PublishedAt = a.PublishedAt ?? DateTime.Now,
-                    Content = a.Content,
-                    Author = a.Author,
-                    LanguageCode = languageCode ?? "en"
-                }).ToList();
+                result = articles.Articles
+                    .OrderByDescending(a => a.PublishedAt ?? DateTime.MinValue)
+                    .Skip(skipCount)
+                    .Take(maxResultCount)
+                    .Select(a => new NewsArticleDto
+                    {
+                        Id = Guid.NewGuid(),
+                        Source = a.Source?.Name ?? "Unknown",
+                        Title = a.Title ?? "",
+                        Description = a.Description ?? "",
+                        Url = a.Url ?? "",
+                        UrlToImage = a.UrlToImage,
+                        PublishedAt = a.PublishedAt ?? DateTime.Now,
+                        Content = a.Content,
+                        Author = a.Author,
+                        LanguageCode = languageCode ?? "en"
+                    }).ToList();
             }
 
             return new PagedResultDto<NewsArticleDto>(result.Count, result);
@@ -338,7 +409,7 @@ namespace NewsApp.News
         {
             try
             {
-                var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+                var newsApiClient = new NewsApiClient(_newsApiKey);
                 var test = await newsApiClient.GetEverythingAsync(new EverythingRequest
                 {
                     Q = "test",
@@ -365,7 +436,7 @@ namespace NewsApp.News
             int page = 1,
             int pageSize = 20)
         {
-            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            var newsApiClient = new NewsApiClient(_newsApiKey);
             
             // Limit page size
             pageSize = Math.Min(pageSize, 20);
@@ -374,6 +445,7 @@ namespace NewsApp.News
             {
                 Q = query,
                 Language = GetLanguageFromCode(language),
+                From = DateTime.UtcNow.AddDays(-2),
                 Page = page,
                 PageSize = pageSize,
                 SortBy = SortBys.PublishedAt
@@ -410,6 +482,7 @@ namespace NewsApp.News
         {
             return languageCode?.ToLower() switch
             {
+                "ar" => Languages.AR,
                 "de" => Languages.DE,
                 "en" => Languages.EN,
                 "es" => Languages.ES,
@@ -419,13 +492,48 @@ namespace NewsApp.News
                 "nl" => Languages.NL,
                 "no" => Languages.NO,
                 "pt" => Languages.PT,
+                "ru" => Languages.RU,
                 "sv" => Languages.SV,
+                "zh" => Languages.ZH,
                 _ => Languages.EN // Default to English
             };
         }
 
         /// <summary>
-        /// Builds keyword query with OR for multiple keywords separated by comma
+        /// Converts country code to NewsAPI Country constant
+        /// </summary>
+        private Countries GetCountryFromCode(string countryCode)
+        {
+            return countryCode?.ToLower() switch
+            {
+                "us" => Countries.US,
+                "gb" => Countries.GB,
+                "de" => Countries.DE,
+                "fr" => Countries.FR,
+                "it" => Countries.IT,
+                _ => Countries.US // Default to US
+            };
+        }
+
+        /// <summary>
+        /// Maps category string to NewsAPI Category enum
+        /// </summary>
+        private Categories MapToNewsAPICategory(string category)
+        {
+            return category?.ToLower() switch
+            {
+                "business" => Categories.Business,
+                "entertainment" => Categories.Entertainment,
+                "health" => Categories.Health,
+                "science" => Categories.Science,
+                "sports" => Categories.Sports,
+                "technology" => Categories.Technology,
+                _ => Categories.Business // Default to Business since General doesn't exist
+            };
+        }
+
+        /// <summary>
+        /// Builds keyword query with OR for multiple keywords separated by comma or pipe
         /// </summary>
         private string BuildKeywordQuery(string keyword)
         {
@@ -434,8 +542,8 @@ namespace NewsApp.News
                 return "news";
             }
 
-            // Split by comma and trim whitespace
-            var keywords = keyword.Split(',')
+            // Split by comma or pipe and trim whitespace
+            var keywords = keyword.Split(new[] { ',', '|' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(k => k.Trim())
                 .Where(k => !string.IsNullOrWhiteSpace(k))
                 .ToList();
@@ -453,5 +561,10 @@ namespace NewsApp.News
             // Build query with OR: "keyword1 OR keyword2 OR keyword3"
             return string.Join(" OR ", keywords);
         }
+        
+        /// <summary>
+        /// Alias for BuildKeywordQuery - converts keywords to NewsAPI query format
+        /// </summary>
+        private string ConvertToNewsApiQuery(string keyword) => BuildKeywordQuery(keyword);
     }
 }

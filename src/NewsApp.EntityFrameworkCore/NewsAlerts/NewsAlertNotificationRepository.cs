@@ -23,8 +23,11 @@ namespace NewsApp.NewsAlerts
             int? maxDaysOld = 7,
             int maxCount = 50)
         {
-            var dbSet = await GetDbSetAsync();
-            var query = dbSet.Where(x => x.UserId == userId);
+            var dbContext = await GetDbContextAsync();
+            var query = from notification in dbContext.NewsAlertNotifications
+                        join alert in dbContext.NewsAlertLists on notification.NewsAlertListId equals alert.Id
+                        where notification.UserId == userId
+                        select notification;
             
             if (isRead.HasValue)
             {
@@ -45,17 +48,18 @@ namespace NewsApp.NewsAlerts
 
         public async Task<int> GetUnreadCountAsync(Guid userId)
         {
-            var dbSet = await GetDbSetAsync();
-            return await dbSet
-                .Where(x => x.UserId == userId && !x.IsRead)
-                .CountAsync();
+            var dbContext = await GetDbContextAsync();
+            return await (from notification in dbContext.NewsAlertNotifications
+                         join alert in dbContext.NewsAlertLists on notification.NewsAlertListId equals alert.Id
+                         where notification.UserId == userId && !notification.IsRead
+                         select notification).CountAsync();
         }
 
         public async Task MarkAllAsReadAsync(Guid userId)
         {
             var dbContext = await GetDbContextAsync();
             await dbContext.Database.ExecuteSqlRawAsync(
-                "UPDATE NewsAlertNotifications SET IsRead = 1 WHERE UserId = {0} AND IsRead = 0",
+                "UPDATE AppNewsAlertNotifications SET IsRead = 1 WHERE UserId = {0} AND IsRead = 0",
                 userId);
         }
 
