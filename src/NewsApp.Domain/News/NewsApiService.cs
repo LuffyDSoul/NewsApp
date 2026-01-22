@@ -35,8 +35,8 @@ namespace NewsApp.News
         {
             ICollection<ArticleDto> responseList = new List<ArticleDto>();
 
-            // init with your API key
-            var newsApiClient = new NewsApiClient("4ac7e25bc43442ffb747b061b607cd2f");
+            // init with API key from configuration
+            var newsApiClient = new NewsApiClient(_newsApiKey);
 
             // Map language code to NewsAPI language enum
             Languages? apiLanguage = null;
@@ -44,15 +44,19 @@ namespace NewsApp.News
             {
                 apiLanguage = language.ToLower() switch
                 {
+                    "ar" => Languages.AR,
+                    "de" => Languages.DE,
                     "en" => Languages.EN,
                     "es" => Languages.ES,
-                    "de" => Languages.DE,
                     "fr" => Languages.FR,
+                    "he" => Languages.HE,
                     "it" => Languages.IT,
-                    "pt" => Languages.PT,
                     "nl" => Languages.NL,
                     "no" => Languages.NO,
+                    "pt" => Languages.PT,
+                    "ru" => Languages.RU,
                     "sv" => Languages.SV,
+                    "zh" => Languages.ZH,
                     _ => Languages.EN
                 };
             }

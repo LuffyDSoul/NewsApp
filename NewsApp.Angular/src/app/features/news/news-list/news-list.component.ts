@@ -968,7 +968,17 @@ export class NewsListComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private newsAlertService: NewsAlertService
-  ) {}
+  ) {
+    // Listen for language change events
+    window.addEventListener('languageChanged', ((event: CustomEvent) => {
+      console.log('Language changed event received:', event.detail.language);
+      this.userLanguage = event.detail.language;
+      // Update cache
+      localStorage.setItem('userLanguage', this.userLanguage);
+      // Reload news with new language
+      this.loadLatestNews();
+    }) as EventListener);
+  }
 
   ngOnInit() {
     this.loadReadingLists();
@@ -1021,10 +1031,13 @@ export class NewsListComponent implements OnInit {
   }
 
   loadUserLanguage() {
+    // Always load from API to get the most up-to-date preference
     this.userProfileService.getMyProfile().subscribe({
       next: (profile) => {
         this.userLanguage = profile.newsLanguageCode || 'en';
-        console.log('User preferred language:', this.userLanguage);
+        console.log('User preferred language from profile:', this.userLanguage);
+        // Update cache
+        localStorage.setItem('userLanguage', this.userLanguage);
         // Load news with correct language
         if (this.selectedCategory) {
           this.loadByCategory();
@@ -1034,7 +1047,10 @@ export class NewsListComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading user language preference:', err);
-        this.userLanguage = 'en'; // Fallback to English
+        // Fallback to cached language if API fails
+        const cachedLanguage = localStorage.getItem('userLanguage');
+        this.userLanguage = cachedLanguage || 'en';
+        console.log('Using fallback language:', this.userLanguage);
         // Still load news even if profile fails
         this.loadLatestNews();
       }

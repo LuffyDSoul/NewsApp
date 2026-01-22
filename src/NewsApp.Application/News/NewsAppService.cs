@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Volo.Abp.Application.Dtos;
 using NewsApp.Permissions;
 using NewsAPI;
@@ -53,102 +54,59 @@ namespace NewsApp.News
             
             var articles = new List<NewsArticleDto>();
             
-            // Valid NewsAPI categories
-            var validCategories = new[] { "business", "entertainment", "general", "health", "science", "sports", "technology" };
+            // Use /everything endpoint for better language support
+            string query;
             
-            // If no category provided, use top-headlines with US
             if (string.IsNullOrEmpty(category))
             {
-                var headlinesRequest = new TopHeadlinesRequest
-                {
-                    Country = Countries.US,
-                    PageSize = pageSize
-                };
-
-                var response = await newsApiClient.GetTopHeadlinesAsync(headlinesRequest);
-                
-                if (response.Status == Statuses.Ok && response.Articles != null)
-                {
-                    articles = response.Articles.Select(a => new NewsArticleDto
-                    {
-                        Id = Guid.NewGuid(),
-                        Source = a.Source?.Name ?? "Unknown",
-                        Title = a.Title ?? "",
-                        Description = a.Description ?? "",
-                        Url = a.Url ?? "",
-                        UrlToImage = a.UrlToImage,
-                        PublishedAt = a.PublishedAt ?? DateTime.Now,
-                        Content = a.Content,
-                        Author = a.Author,
-                        LanguageCode = language
-                    }).ToList();
-                }
-            }
-            // Check if category is valid
-            else if (validCategories.Contains(category.ToLower()))
-            {
-                // Use /top-headlines endpoint with category and country
-                var headlinesRequest = new TopHeadlinesRequest
-                {
-                    Category = MapToNewsAPICategory(category),
-                    Country = Countries.US,
-                    PageSize = pageSize
-                };
-
-                var response = await newsApiClient.GetTopHeadlinesAsync(headlinesRequest);
-                
-                if (response.Status == Statuses.Ok && response.Articles != null)
-                {
-                    articles = response.Articles.Select(a => new NewsArticleDto
-                    {
-                        Id = Guid.NewGuid(),
-                        Source = a.Source?.Name ?? "Unknown",
-                        Title = a.Title ?? "",
-                        Description = a.Description ?? "",
-                        Url = a.Url ?? "",
-                        UrlToImage = a.UrlToImage,
-                        PublishedAt = a.PublishedAt ?? DateTime.Now,
-                        Content = a.Content,
-                        Author = a.Author,
-                        LanguageCode = language
-                    }).ToList();
-                }
+                // For "Latest News", use wildcard to get all news in the specified language
+                query = "*";
             }
             else
             {
-                // Use /everything endpoint with a generic query or keyword search
-                var query = !string.IsNullOrEmpty(category) 
-                    ? ConvertToNewsApiQuery(category) 
-                    : "technology OR world OR business"; // Default query when no category
-                
-                var everythingRequest = new EverythingRequest
-                {
-                    Q = query,
-                    Language = GetLanguageFromCode(language),
-                    From = DateTime.UtcNow.AddDays(-3),
-                    Page = page,
-                    PageSize = pageSize,
-                    SortBy = SortBys.PublishedAt
-                };
+                // For specific categories, use the category name as query
+                query = category;
+            }
 
-                var response = await newsApiClient.GetEverythingAsync(everythingRequest);
-                
-                if (response.Status == Statuses.Ok && response.Articles != null)
+            Logger.LogInformation("Requesting news from NewsAPI (Query: {Query}, Language: {Language}, PageSize: {PageSize})", 
+                query, language, pageSize);
+
+            var everythingRequest = new EverythingRequest
+            {
+                Q = query,
+                Language = GetLanguageFromCode(language),
+                From = DateTime.UtcNow.AddDays(-7), // Last 7 days
+                Page = page,
+                PageSize = pageSize,
+                SortBy = SortBys.PublishedAt // Most recent first
+            };
+
+            var response = await newsApiClient.GetEverythingAsync(everythingRequest);
+            
+            Logger.LogInformation("NewsAPI Response - Status: {Status}, TotalResults: {TotalResults}, ArticleCount: {ArticleCount}", 
+                response.Status, response.TotalResults, response.Articles?.Count ?? 0);
+            
+            if (response.Status != Statuses.Ok)
+            {
+                Logger.LogWarning("NewsAPI returned non-OK status: {Status}. Error: {Error}", 
+                    response.Status, response.Error?.Message ?? "Unknown error");
+            }
+            
+            if (response.Status == Statuses.Ok && response.Articles != null)
+            {
+                articles = response.Articles.Select(a => new NewsArticleDto
                 {
-                    articles = response.Articles.Select(a => new NewsArticleDto
-                    {
-                        Id = Guid.NewGuid(),
-                        Source = a.Source?.Name ?? "Unknown",
-                        Title = a.Title ?? "",
-                        Description = a.Description ?? "",
-                        Url = a.Url ?? "",
-                        UrlToImage = a.UrlToImage,
-                        PublishedAt = a.PublishedAt ?? DateTime.Now,
-                        Content = a.Content,
-                        Author = a.Author,
-                        LanguageCode = language
-                    }).ToList();
-                }
+                    Id = Guid.NewGuid(),
+                    Source = a.Source?.Name ?? "Unknown",
+                    Title = a.Title ?? "",
+                    Description = a.Description ?? "",
+                    Url = a.Url ?? "",
+                    UrlToImage = a.UrlToImage,
+                    PublishedAt = a.PublishedAt ?? DateTime.Now,
+                    Content = a.Content,
+                    Author = a.Author,
+                    LanguageCode = language
+                }).ToList();
             }
 
             return new PagedResultDto<NewsArticleDto>(articles.Count, articles);

@@ -63,17 +63,29 @@ namespace NewsApp.NewsAlerts
         {
             var userId = CurrentUser.Id ?? throw new BusinessException("User is not authenticated");
             
-            // Check if active alert with same name already exists for this user (excluding soft-deleted ones)
-            var existingAlert = await _alertListRepository.GetByNameAsync(userId, input.Name);
-            if (existingAlert != null && !existingAlert.IsDeleted)
-            {
-                throw new BusinessException("An alert with this name already exists");
-            }
-            
             // Validate that keyword is provided
             if (string.IsNullOrWhiteSpace(input.Keyword))
             {
                 throw new BusinessException("Keyword is required");
+            }
+            
+            // Check if alert with same name already exists for this user
+            try
+            {
+                var existingAlert = await _alertListRepository.GetByNameAsync(userId, input.Name);
+                if (existingAlert != null && !existingAlert.IsDeleted)
+                {
+                    throw new BusinessException($"An alert with the name '{input.Name}' already exists. Please choose a different name.");
+                }
+            }
+            catch (BusinessException)
+            {
+                throw; // Re-throw business exceptions
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Error checking for existing alert with name {Name}", input.Name);
+                // Continue with creation - if it truly exists, DB will catch it
             }
             
             // Use "general" as placeholder for categories since we're keyword-only now
@@ -90,9 +102,16 @@ namespace NewsApp.NewsAlerts
                 input.IsActive
             );
             
-            await _alertListRepository.InsertAsync(alert);
-            
-            return ObjectMapper.Map<NewsAlertList, NewsAlertListDto>(alert);
+            try
+            {
+                await _alertListRepository.InsertAsync(alert);
+                return ObjectMapper.Map<NewsAlertList, NewsAlertListDto>(alert);
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_AppNewsAlertLists_UserId_Name") == true)
+            {
+                Logger.LogWarning(ex, "Duplicate alert name detected for user {UserId} with name {Name}", userId, input.Name);
+                throw new BusinessException($"An alert with the name '{input.Name}' already exists. Please choose a different name or delete the existing one first.");
+            }
         }
 
         public async Task<NewsAlertListDto> UpdateAsync(Guid id, UpdateNewsAlertListDto input)
