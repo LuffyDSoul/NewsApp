@@ -47,6 +47,14 @@ public class NewsAppPermissionDefinitionProvider : PermissionDefinitionProvider
         monitoringPermission.AddChild(NewsAppPermissions.Monitoring.Export, L("Permission:Monitoring.Export"));
         monitoringPermission.AddChild(NewsAppPermissions.Monitoring.SystemHealth, L("Permission:Monitoring.SystemHealth"));
 
+        // User Profile permissions
+        var profilePermission = newsAppGroup.AddPermission(NewsAppPermissions.Profile.Default, L("Permission:Profile"));
+        profilePermission.AddChild(NewsAppPermissions.Profile.View, L("Permission:Profile.View"));
+        profilePermission.AddChild(NewsAppPermissions.Profile.Edit, L("Permission:Profile.Edit"));
+        profilePermission.AddChild(NewsAppPermissions.Profile.ChangePassword, L("Permission:Profile.ChangePassword"));
+        profilePermission.AddChild(NewsAppPermissions.Profile.ManageLanguage, L("Permission:Profile.ManageLanguage"));
+        profilePermission.AddChild(NewsAppPermissions.Profile.ManageNotifications, L("Permission:Profile.ManageNotifications"));
+
         // Settings permissions
         var settingsPermission = newsAppGroup.AddPermission(NewsAppPermissions.Settings.Default, L("Permission:Settings"));
         settingsPermission.AddChild(NewsAppPermissions.Settings.ManageProfile, L("Permission:Settings.ManageProfile"));

@@ -1,5 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NewsApp.Themes;
+using NewsApp.ReadingLists;
+using NewsApp.Domain.UserProfile;
+using NewsApp.Domain.NewsAlerts;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
 using Volo.Abp.Data;
@@ -59,6 +62,12 @@ public class NewsAppDbContext :
     #region Entidades de dominio
 
     public DbSet<Theme> Themes { get; set; }
+    public DbSet<ReadingList> ReadingLists { get; set; }
+    public DbSet<SavedArticle> SavedArticles { get; set; }
+    public DbSet<UserPreferences> UserPreferences { get; set; }
+    public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
+    public DbSet<NewsAlertList> NewsAlertLists { get; set; }
+    public DbSet<NewsAlertNotification> NewsAlertNotifications { get; set; }
 
     #endregion
 
@@ -98,6 +107,126 @@ public class NewsAppDbContext :
             b.ToTable(NewsAppConsts.DbTablePrefix + "Themes", NewsAppConsts.DbSchema);
             b.ConfigureByConvention();
             b.Property(x => x.Name).IsRequired().HasMaxLength(128);            
+        });
+
+        // Reading Lists
+        builder.Entity<ReadingList>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "ReadingLists", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            
+            b.Property(x => x.Name).IsRequired().HasMaxLength(256);
+            b.Property(x => x.Description).HasMaxLength(1024);
+            b.Property(x => x.Color).HasMaxLength(50);
+            
+            // Relationship with User
+            b.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Index for user queries
+            b.HasIndex(x => x.UserId);
+            b.HasIndex(x => new { x.UserId, x.Name }).IsUnique();
+        });
+
+        // Saved Articles
+        builder.Entity<SavedArticle>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "SavedArticles", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            
+            b.Property(x => x.Source).HasMaxLength(256);
+            b.Property(x => x.Title).IsRequired().HasMaxLength(512);
+            b.Property(x => x.Description).HasMaxLength(1024);
+            b.Property(x => x.Url).IsRequired().HasMaxLength(2048);
+            b.Property(x => x.UrlToImage).HasMaxLength(2048);
+            b.Property(x => x.LanguageCode).HasMaxLength(5);
+            b.Property(x => x.Author).HasMaxLength(256);
+            b.Property(x => x.Tags).HasMaxLength(1024);
+            
+            // Relationship with User
+            b.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Relationship with ReadingList
+            b.HasOne(x => x.ReadingList)
+                .WithMany(x => x.SavedArticles)
+                .HasForeignKey(x => x.ReadingListId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Indexes for performance
+            b.HasIndex(x => x.UserId);
+            b.HasIndex(x => x.ReadingListId);
+            // Allow same URL in different lists for the same user
+            b.HasIndex(x => new { x.UserId, x.Url, x.ReadingListId }).IsUnique();
+        });
+
+        // User Preferences
+        builder.Entity<UserPreferences>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "UserPreferences", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            
+            b.Property(x => x.NewsLanguageCode).IsRequired().HasMaxLength(10);
+            b.Property(x => x.NewsLanguageName).IsRequired().HasMaxLength(50);
+            b.Property(x => x.TimeZone).HasMaxLength(100);
+            b.Property(x => x.Theme).HasMaxLength(20);
+            
+            // Index for user queries
+            b.HasIndex(x => x.UserId).IsUnique();
+        });
+
+        // Email Verification Tokens
+        builder.Entity<EmailVerificationToken>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "EmailVerificationTokens", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            
+            b.Property(x => x.NewEmail).IsRequired().HasMaxLength(256);
+            b.Property(x => x.Token).IsRequired().HasMaxLength(500);
+            
+            // Indexes for performance
+            b.HasIndex(x => x.UserId);
+            b.HasIndex(x => x.Token).IsUnique();
+            b.HasIndex(x => new { x.UserId, x.NewEmail, x.IsUsed });
+            b.HasIndex(x => x.ExpirationDate);
+        });
+
+        // News Alert Lists
+        builder.Entity<NewsAlertList>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "NewsAlertLists", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            
+            b.Property(x => x.Name).IsRequired().HasMaxLength(256);
+            b.Property(x => x.Description).HasMaxLength(1024);
+            b.Property(x => x.Categories).IsRequired().HasMaxLength(512);
+            b.Property(x => x.LanguageCode).IsRequired().HasMaxLength(5);
+            
+            // Indexes for performance
+            b.HasIndex(x => x.UserId);
+            b.HasIndex(x => x.IsActive);
+            b.HasIndex(x => new { x.UserId, x.Name }).IsUnique();
+        });
+
+        // News Alert Notifications
+        builder.Entity<NewsAlertNotification>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "NewsAlertNotifications", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            
+            b.Property(x => x.AlertListName).IsRequired().HasMaxLength(256);
+            b.Property(x => x.Category).IsRequired().HasMaxLength(50);
+            b.Property(x => x.LanguageCode).IsRequired().HasMaxLength(5);
+            
+            // Indexes for performance
+            b.HasIndex(x => x.UserId);
+            b.HasIndex(x => x.NewsAlertListId);
+            b.HasIndex(x => x.IsRead);
+            b.HasIndex(x => x.CreationTime);
         });
     }
 }

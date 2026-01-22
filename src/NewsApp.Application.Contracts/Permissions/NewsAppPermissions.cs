@@ -67,6 +67,19 @@ public static class NewsAppPermissions
     }
 
     /// <summary>
+    /// User profile permissions
+    /// </summary>
+    public static class Profile
+    {
+        public const string Default = GroupName + ".Profile";
+        public const string View = Default + ".View";
+        public const string Edit = Default + ".Edit";
+        public const string ChangePassword = Default + ".ChangePassword";
+        public const string ManageLanguage = Default + ".ManageLanguage";
+        public const string ManageNotifications = Default + ".ManageNotifications";
+    }
+
+    /// <summary>
     /// User settings permissions
     /// </summary>
     public static class Settings

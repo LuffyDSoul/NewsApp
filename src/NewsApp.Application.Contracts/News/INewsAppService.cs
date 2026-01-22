@@ -107,8 +107,22 @@ namespace NewsApp.News
         /// <returns>True if connection is successful</returns>
         Task<bool> TestConnectionAsync();
 
+        /// <summary>
+        /// Get news with filter (for background workers and alerts)
+        /// </summary>
+        /// <param name="query">Search query (category name or keywords)</param>
+        /// <param name="language">Language code</param>
+        /// <param name="page">Page number</param>
+        /// <param name="pageSize">Number of articles per page</param>
+        /// <returns>Paginated list of articles</returns>
+        Task<PagedResultDto<NewsArticleDto>> GetNewsWithFilterAsync(
+            string query,
+            string language = "en",
+            int page = 1,
+            int pageSize = 20);
+
         // Legacy method for backward compatibility
-        [Obsolete("Use SearchAsync with NewsSearchDto instead")]
-        Task<ICollection<NewsDto>> Search(string query);
+//        [Obsolete("Use SearchAsync with NewsSearchDto instead")]
+//        Task<ICollection<NewsDto>> Search(string query);
     }
 }

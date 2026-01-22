@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NewsApp.EntityFrameworkCore;
 using NewsApp.MultiTenancy;
+using NewsApp.NewsAlerts.BackgroundWorkers;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite.Bundling;
 using Microsoft.OpenApi.Models;
@@ -69,6 +70,9 @@ public class NewsAppHttpApiHostModule : AbpModule
         ConfigureVirtualFileSystem(context);
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
+        
+        // Register News Alert Background Service
+        context.Services.AddHostedService<NewsAlertBackgroundService>();
     }
 
     private void ConfigureAuthentication(ServiceConfigurationContext context)
@@ -130,14 +134,26 @@ public class NewsAppHttpApiHostModule : AbpModule
     {
         Configure<AbpAspNetCoreMvcOptions>(options =>
         {
+            // Configuraci�n general para otros servicios (excluyendo News)
             options.ConventionalControllers.Create(typeof(NewsAppApplicationModule).Assembly, opts =>
             {
                 opts.RootPath = "api/app";
                 opts.RemoteServiceName = "Default";
-                opts.TypePredicate = type => type.Namespace?.StartsWith("NewsApp.") == true &&
-                                           !type.Namespace.Contains(".News.") && // Exclude News services since we have explicit controllers
-                                           type.Name.EndsWith("AppService");
+                opts.TypePredicate = type => 
+                    type.Namespace?.StartsWith("NewsApp.") == true &&
+                    !type.Namespace.Contains(".News.") && // Excluye servicios de noticias
+                    type.Name.EndsWith("AppService");
             });
+            
+            // Comentamos temporalmente la configuraci�n de News para usar controller manual
+            // options.ConventionalControllers.Create(typeof(NewsAppApplicationModule).Assembly, opts =>
+            // {
+            //     opts.RootPath = "api/news";
+            //     opts.RemoteServiceName = "News";
+            //     opts.TypePredicate = type => 
+            //         type.Namespace?.Contains(".News.") == true &&
+            //         type.Name.EndsWith("AppService");
+            // });
         });
     }
 

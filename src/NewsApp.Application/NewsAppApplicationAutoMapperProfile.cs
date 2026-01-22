@@ -3,14 +3,18 @@ using AutoMapper;
 using NewsApp.News;
 using NewsApp.Themes;
 using NewsApp.User;
+using NewsApp.UserProfile;
 using NewsApp.Lists;
 using NewsApp.Alerts;
 using NewsApp.Monitoring;
+using NewsApp.NewsAlerts;
 using NewsApp.Domain.News;
 using NewsApp.Domain.Lists;
 using NewsApp.Domain.Alerts;
 using NewsApp.Domain.Monitoring;
 using NewsApp.Domain.News.Services;
+using NewsApp.Domain.UserProfile;
+using NewsApp.Domain.NewsAlerts;
 using Volo.Abp.Identity;
 
 namespace NewsApp;
@@ -93,5 +97,25 @@ public class NewsAppApplicationAutoMapperProfile : Profile
 
         // Monitoring mappings
         CreateMap<ApiCallMetric, ApiCallMetricDto>();
+
+        // User Profile mappings
+        CreateMap<IdentityUser, UserProfileDto>()
+            .ForMember(dest => dest.NewsLanguageCode, opt => opt.Ignore()) // Will be filled by service
+            .ForMember(dest => dest.NewsLanguageName, opt => opt.Ignore()); // Will be filled by service
+
+        CreateMap<UserPreferences, UserProfileDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.Email, opt => opt.Ignore())
+            .ForMember(dest => dest.UserName, opt => opt.Ignore())
+            .ForMember(dest => dest.Name, opt => opt.Ignore())
+            .ForMember(dest => dest.Surname, opt => opt.Ignore())
+            .ForMember(dest => dest.PhoneNumber, opt => opt.Ignore())
+            .ForMember(dest => dest.EmailConfirmed, opt => opt.Ignore())
+            .ForMember(dest => dest.PhoneNumberConfirmed, opt => opt.Ignore())
+            .ForMember(dest => dest.TwoFactorEnabled, opt => opt.Ignore());
+
+        // News Alerts mappings
+        CreateMap<NewsAlertList, NewsAlertListDto>();
+        CreateMap<NewsAlertNotification, NewsAlertNotificationDto>();
     }
 }

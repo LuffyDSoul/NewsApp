@@ -1,6 +1,7 @@
 ﻿using NewsAPI;
 using NewsAPI.Constants;
 using NewsAPI.Models;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,25 +14,59 @@ namespace NewsApp.News
 {
     public class NewsApiService : INewsService
     {
+        private readonly string _newsApiKey;
+
+        public NewsApiService(IConfiguration configuration)
+        {
+            _newsApiKey = configuration["NewsApi:ApiKey"] ?? "";
+        }
+
         public async Task<ICollection<ArticleDto>> GetNewsAsync(string query)
+        {
+            return await GetNewsAsync(query, language: null, from: DateTime.Now.AddDays(-7), to: DateTime.Now, pageSize: 20);
+        }
+
+        public async Task<ICollection<ArticleDto>> GetNewsAsync(
+            string query, 
+            string? language = null, 
+            DateTime? from = null, 
+            DateTime? to = null,
+            int pageSize = 20)
         {
             ICollection<ArticleDto> responseList = new List<ArticleDto>();
 
             // init with your API key
-            var newsApiClient = new NewsApiClient("5ce39a327dab4cefa09559c6fe5d9de9");
+            var newsApiClient = new NewsApiClient("4ac7e25bc43442ffb747b061b607cd2f");
+
+            // Map language code to NewsAPI language enum
+            Languages? apiLanguage = null;
+            if (!string.IsNullOrEmpty(language))
+            {
+                apiLanguage = language.ToLower() switch
+                {
+                    "en" => Languages.EN,
+                    "es" => Languages.ES,
+                    "de" => Languages.DE,
+                    "fr" => Languages.FR,
+                    "it" => Languages.IT,
+                    "pt" => Languages.PT,
+                    "nl" => Languages.NL,
+                    "no" => Languages.NO,
+                    "sv" => Languages.SV,
+                    _ => Languages.EN
+                };
+            }
             
             var articlesResponse = await newsApiClient.GetEverythingAsync(new EverythingRequest
             {
                 Q = query,
-                SortBy = SortBys.Popularity,
-                Language = Languages.EN,
-                // Mejorado: usar fecha más reciente para obtener noticias actuales
-                From = DateTime.Now.AddDays(-7), // Últimos 7 días en lugar de 1 mes
-                To = DateTime.Now, // Hasta hoy
-                PageSize = 20 // Aumentado a 20 para más resultados
+                SortBy = SortBys.PublishedAt, // Changed to PublishedAt to get most recent
+                Language = apiLanguage ?? Languages.EN,
+                From = from ?? DateTime.Now.AddDays(-1), // Default last 24 hours
+                To = to ?? DateTime.Now,
+                PageSize = pageSize
             });
 
-            // Mejorado: manejar errores apropiadamente
             if (articlesResponse.Status == Statuses.Ok)
             {
                 if (articlesResponse.Articles != null && articlesResponse.Articles.Any())
@@ -50,7 +85,6 @@ namespace NewsApp.News
             }
             else
             {
-                // Log del error o manejo apropiado sin acceder a Message
                 throw new InvalidOperationException($"NewsAPI error: Status = {articlesResponse.Status}");
             }
             
@@ -58,3 +92,4 @@ namespace NewsApp.News
         }
     }
 }
+

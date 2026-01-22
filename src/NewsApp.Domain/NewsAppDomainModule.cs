@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using NewsApp.Email;
 using NewsApp.MultiTenancy;
+using NewsApp.Notifications;
 using Volo.Abp.AuditLogging;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.Emailing;
@@ -60,6 +62,18 @@ public class NewsAppDomainModule : AbpModule
         {
             options.IsEnabled = MultiTenancyConsts.IsEnabled;
         });
+
+        // Configurar servicios de email y notificaciones
+        var configuration = context.Services.GetConfiguration();
+        
+        context.Services.Configure<EmailSettings>(
+            configuration.GetSection("Email"));
+        
+        context.Services.Configure<NewsNotificationSettings>(
+            configuration.GetSection("NewsNotifications"));
+
+        // Registrar el background worker
+        context.Services.AddHostedService<NewsNotificationWorker>();
 
 #if DEBUG
         context.Services.Replace(ServiceDescriptor.Singleton<IEmailSender, NullEmailSender>());

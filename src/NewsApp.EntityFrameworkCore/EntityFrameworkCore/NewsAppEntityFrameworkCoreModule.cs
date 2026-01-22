@@ -1,5 +1,9 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
+using NewsApp.EntityFrameworkCore.ReadingLists;
+using NewsApp.ReadingLists;
+using NewsApp.UserProfile;
+using NewsApp.Domain.UserProfile;
 using Volo.Abp.Uow;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
@@ -41,6 +45,11 @@ public class NewsAppEntityFrameworkCoreModule : AbpModule
                 /* Remove "includeAllEntities: true" to create
                  * default repositories only for aggregate roots */
             options.AddDefaultRepositories(includeAllEntities: true);
+
+            // Register custom repositories
+            options.AddRepository<ReadingList, EfCoreReadingListRepository>();
+            options.AddRepository<SavedArticle, EfCoreSavedArticleRepository>();
+            options.AddRepository<UserPreferences, EfCoreUserPreferencesRepository>();
         });
 
         Configure<AbpDbContextOptions>(options =>

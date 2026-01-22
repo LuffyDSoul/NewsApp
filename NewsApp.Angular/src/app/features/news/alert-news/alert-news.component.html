@@ -1,0 +1,185 @@
+<div class="alert-news-container">
+  <!-- Header -->
+  <div class="alert-news-header">
+    <button class="btn-back" (click)="goBack()">
+      <i class="fas fa-arrow-left"></i>
+      Back to Alerts
+    </button>
+    <div class="header-info">
+      <h1>
+        <i class="fas fa-bell"></i>
+        {{ alertName }} News
+      </h1>
+      <div class="filter-info">
+        <span class="filter-badge" *ngIf="alertKeyword">
+          <i class="fas fa-search"></i>
+          {{ alertKeyword }}
+        </span>
+        <span class="filter-badge" *ngIf="alertLanguage">
+          <i class="fas fa-language"></i>
+          {{ alertLanguage.toUpperCase() }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading news...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-container">
+    <i class="fas fa-exclamation-circle"></i>
+    <p>{{ error }}</p>
+    <button class="btn-retry" (click)="loadAlertNews()">Retry</button>
+  </div>
+
+  <!-- Articles List -->
+  <div *ngIf="!loading && !error" class="articles-container">
+    <div class="articles-count">
+      <span>{{ articles.length }} article{{ articles.length !== 1 ? 's' : '' }} found</span>
+    </div>
+
+    <div *ngIf="articles.length === 0" class="no-articles">
+      <i class="fas fa-newspaper"></i>
+      <p>No news found matching your alert criteria</p>
+      <small>Try adjusting your alert settings or check back later</small>
+    </div>
+
+    <div class="articles-grid">
+      <div *ngFor="let article of articles" class="article-card">
+        <div class="article-image" *ngIf="article.urlToImage">
+          <img [src]="article.urlToImage" [alt]="article.title" (error)="$event.target.style.display='none'">
+        </div>
+        <div class="article-content">
+          <div class="article-meta">
+            <span class="article-source">{{ article.source }}</span>
+            <span class="article-date">{{ formatDate(article.publishedAt) }}</span>
+          </div>
+          <h3 class="article-title">{{ article.title }}</h3>
+          <p class="article-description">{{ article.description }}</p>
+          <div class="article-actions">
+            <button class="btn-read" (click)="openArticle(article)">
+              <i class="fas fa-external-link-alt"></i>
+              Read Article
+            </button>
+            <button 
+              class="btn-save" 
+              [class.saved]="isArticleSaved(article)"
+              [disabled]="savingArticles.has(article.url)"
+              (click)="openSaveToListsModal(article)">
+              <i class="fas" [class.fa-bookmark]="!isArticleSaved(article)" [class.fa-check]="isArticleSaved(article)"></i>
+              {{ isArticleSaved(article) ? 'Saved' : 'Save' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Load More Button -->
+    <div *ngIf="hasMoreNews && articles.length > 0" class="load-more-container">
+      <button class="btn-load-more" (click)="loadMoreNews()" [disabled]="loadingMore">
+        <span *ngIf="!loadingMore">Load More</span>
+        <span *ngIf="loadingMore">
+          <i class="fas fa-spinner fa-spin"></i>
+          Loading...
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Save to Lists Modal -->
+<div class="modal-overlay" *ngIf="showSaveToListsModal" (click)="closeSaveToListsModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="fas fa-bookmark"></i>
+        Save to Reading Lists
+      </h3>
+      <button class="btn-close" (click)="closeSaveToListsModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div *ngIf="readingLists.length === 0" class="no-lists-message">
+        <p>You don't have any reading lists yet.</p>
+        <button class="btn-create-list" (click)="openCreateListModal()">
+          <i class="fas fa-plus"></i>
+          Create First List
+        </button>
+      </div>
+      <div *ngIf="readingLists.length > 0" class="lists-selection">
+        <div *ngFor="let list of readingLists" class="list-item">
+          <label class="list-checkbox">
+            <input 
+              type="checkbox" 
+              [checked]="selectedListIds.has(list.id)"
+              (change)="toggleListSelection(list.id)">
+            <span class="checkmark"></span>
+            <div class="list-info">
+              <span class="list-name">{{ list.name }}</span>
+              <span class="list-count">{{ list.articleCount || 0 }} articles</span>
+            </div>
+          </label>
+        </div>
+        <button class="btn-new-list" (click)="openCreateListModal()">
+          <i class="fas fa-plus"></i>
+          Create New List
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeSaveToListsModal()">Cancel</button>
+      <button class="btn-save-lists" (click)="saveToSelectedLists()">
+        Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Create List Modal -->
+<div class="modal-overlay" *ngIf="showCreateListModal" (click)="closeCreateListModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="fas fa-plus"></i>
+        Create New Reading List
+      </h3>
+      <button class="btn-close" (click)="closeCreateListModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="listName">List Name *</label>
+        <input 
+          type="text" 
+          id="listName"
+          [(ngModel)]="newListName" 
+          placeholder="Enter list name"
+          maxlength="100">
+      </div>
+      <div class="form-group">
+        <label for="listDescription">Description</label>
+        <textarea 
+          id="listDescription"
+          [(ngModel)]="newListDescription" 
+          placeholder="Enter list description (optional)"
+          rows="3"
+          maxlength="500"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeCreateListModal()">Cancel</button>
+      <button 
+        class="btn-create" 
+        (click)="createNewList()"
+        [disabled]="!newListName.trim() || isCreatingList">
+        {{ isCreatingList ? 'Creating...' : 'Create List' }}
+      </button>
+    </div>
+  </div>
+</div>
