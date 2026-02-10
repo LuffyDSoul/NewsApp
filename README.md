@@ -15,7 +15,7 @@
 - Valentín Schultheis
 - Leandro Guiffrey
 
-**Año**: 2024
+**Año**: 2026
 
 ---
 
@@ -364,7 +364,7 @@ Este proyecto es de código abierto y está disponible bajo licencia MIT para fi
 ## 👥 Contacto
 
 Para preguntas o sugerencias sobre el proyecto, contactar a:
-- **Email**: desarrollo@newsapp.edu.ar
+- **Email**: pablo.leal224@gmail.com
 - **Universidad**: UTN-FRCU
 
 ---
