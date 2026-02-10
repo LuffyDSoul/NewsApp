@@ -173,9 +173,16 @@ namespace NewsApp.NewsAlerts
         public async Task<List<NewsAlertNotificationDto>> GetMyNotificationsAsync(bool? unreadOnly = null, int maxCount = 50)
         {
             var userId = CurrentUser.Id ?? throw new BusinessException("User is not authenticated");
+            
+            // Convert unreadOnly to isRead parameter
+            // unreadOnly = true means we want only unread notifications (isRead = false)
+            // unreadOnly = false means we want all notifications (isRead = null)
+            // unreadOnly = null means we want all notifications (isRead = null)
+            bool? isRead = unreadOnly.HasValue ? (unreadOnly.Value ? false : (bool?)null) : null;
+            
             var notifications = await _notificationRepository.GetUserNotificationsAsync(
                 userId, 
-                unreadOnly, 
+                isRead, 
                 maxDaysOld: 7, 
                 maxCount: maxCount
             );
