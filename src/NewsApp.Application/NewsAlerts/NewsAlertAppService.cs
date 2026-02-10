@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NewsApp.Domain.NewsAlerts;
 using NewsApp.News;
@@ -230,10 +231,10 @@ namespace NewsApp.NewsAlerts
                 // Get user information
                 var user = await _userRepository.GetAsync(userId);
                 
-                // Check if email is confirmed
-                if (!user.EmailConfirmed || string.IsNullOrEmpty(user.Email))
+                // Check if email is configured
+                if (string.IsNullOrEmpty(user.Email))
                 {
-                    throw new BusinessException("Your email must be confirmed to receive alert notifications. Please verify your email in your profile.");
+                    throw new BusinessException("No email address configured in your profile. Please add an email address to receive notifications.");
                 }
 
                 Logger.LogInformation("Testing alert {AlertId} for user {UserId}", id, userId);
