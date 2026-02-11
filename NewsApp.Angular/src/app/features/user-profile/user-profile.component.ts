@@ -896,6 +896,7 @@ errorMessage = '';
     this.clearMessages();
 
     const languageCode = this.preferencesForm.get('newsLanguageCode')?.value;
+    const oldLanguage = this.userProfile?.newsLanguageCode;
 
     this.userProfileService.updateNewsLanguage(languageCode)
       .pipe(takeUntil(this.destroy$))
@@ -903,13 +904,24 @@ errorMessage = '';
         next: (result: ProfileUpdateResult) => {
           this.isLoading = false;
           if (result.success) {
-            this.showSuccess(result.message);
+            this.showSuccess(result.message + ' - The news feed will refresh automatically.');
             if (this.userProfile) {
               this.userProfile.newsLanguageCode = languageCode;
               const selectedLanguage = this.availableLanguages.find(l => l.code === languageCode);
               if (selectedLanguage) {
                 this.userProfile.newsLanguageName = selectedLanguage.name;
               }
+            }
+            
+            // If language changed, emit event or reload news
+            if (oldLanguage !== languageCode) {
+              // Trigger a window event that the news component can listen to
+              window.dispatchEvent(new CustomEvent('languageChanged', { 
+                detail: { language: languageCode } 
+              }));
+              
+              // Also store in localStorage for immediate availability
+              localStorage.setItem('userLanguage', languageCode);
             }
           } else {
             this.showError(result.message);

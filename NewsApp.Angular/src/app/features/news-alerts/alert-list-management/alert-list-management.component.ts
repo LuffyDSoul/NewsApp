@@ -58,29 +58,6 @@ export class AlertListManagementComponent implements OnInit {
     private router: Router
   ) {}
 
-  checkAlertsNow(): void {
-    this.loading = true;
-    this.newsAlertService.triggerManualCheck().subscribe({
-      next: (response) => {
-        this.loading = false;
-        // Reload alerts and notification counts after manual check
-        this.loadAlerts();
-        
-        // Trigger refresh of notification panel
-        this.newsAlertService.refreshNotifications();
-        
-        // Show success message
-        const message = response.message || 'Alert check completed successfully!';
-        alert(`Alert check completed!\n\n${message}\n\nPlease check your notifications panel for new alerts.`);
-      },
-      error: (error) => {
-        console.error('Error checking alerts:', error);
-        alert('Error checking alerts: ' + (error.error?.error?.message || 'Unknown error'));
-        this.loading = false;
-      }
-    });
-  }
-
   ngOnInit(): void {
     this.loadAlerts();
   }

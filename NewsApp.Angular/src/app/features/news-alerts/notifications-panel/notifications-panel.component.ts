@@ -142,6 +142,11 @@ export class NotificationsPanelComponent implements OnInit, OnDestroy {
     this.newsAlertService.markAsRead(notification.id).subscribe({
       next: () => {
         notification.isRead = true;
+        // Decrease the unread count locally
+        if (this.unreadCount > 0) {
+          this.unreadCount--;
+        }
+        // Also update from server to ensure consistency
         this.loadUnreadCount();
       },
       error: (error) => {
@@ -161,9 +166,13 @@ export class NotificationsPanelComponent implements OnInit, OnDestroy {
     this.apiCallCount++;
     this.newsAlertService.markAllAsRead().subscribe({
       next: () => {
+        // Mark all notifications as read in the local array
+        this.notifications.forEach(n => n.isRead = true);
         this.unreadCount = 0;
-        // Reload notifications to reflect the change
+        this.previousUnreadCount = 0;
+        // Reload notifications to reflect the change from server
         this.loadNotifications();
+        this.loadUnreadCount();
       },
       error: (error) => {
         console.error('Error marking all as read:', error);

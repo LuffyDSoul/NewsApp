@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NewsApp.Domain.NewsAlerts;
 using NewsApp.News;
@@ -63,17 +64,29 @@ namespace NewsApp.NewsAlerts
         {
             var userId = CurrentUser.Id ?? throw new BusinessException("User is not authenticated");
             
-            // Check if active alert with same name already exists for this user (excluding soft-deleted ones)
-            var existingAlert = await _alertListRepository.GetByNameAsync(userId, input.Name);
-            if (existingAlert != null && !existingAlert.IsDeleted)
-            {
-                throw new BusinessException("An alert with this name already exists");
-            }
-            
             // Validate that keyword is provided
             if (string.IsNullOrWhiteSpace(input.Keyword))
             {
                 throw new BusinessException("Keyword is required");
+            }
+            
+            // Check if alert with same name already exists for this user
+            try
+            {
+                var existingAlert = await _alertListRepository.GetByNameAsync(userId, input.Name);
+                if (existingAlert != null && !existingAlert.IsDeleted)
+                {
+                    throw new BusinessException($"An alert with the name '{input.Name}' already exists. Please choose a different name.");
+                }
+            }
+            catch (BusinessException)
+            {
+                throw; // Re-throw business exceptions
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Error checking for existing alert with name {Name}", input.Name);
+                // Continue with creation - if it truly exists, DB will catch it
             }
             
             // Use "general" as placeholder for categories since we're keyword-only now
@@ -90,9 +103,16 @@ namespace NewsApp.NewsAlerts
                 input.IsActive
             );
             
-            await _alertListRepository.InsertAsync(alert);
-            
-            return ObjectMapper.Map<NewsAlertList, NewsAlertListDto>(alert);
+            try
+            {
+                await _alertListRepository.InsertAsync(alert);
+                return ObjectMapper.Map<NewsAlertList, NewsAlertListDto>(alert);
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_AppNewsAlertLists_UserId_Name") == true)
+            {
+                Logger.LogWarning(ex, "Duplicate alert name detected for user {UserId} with name {Name}", userId, input.Name);
+                throw new BusinessException($"An alert with the name '{input.Name}' already exists. Please choose a different name or delete the existing one first.");
+            }
         }
 
         public async Task<NewsAlertListDto> UpdateAsync(Guid id, UpdateNewsAlertListDto input)
@@ -153,9 +173,16 @@ namespace NewsApp.NewsAlerts
         public async Task<List<NewsAlertNotificationDto>> GetMyNotificationsAsync(bool? unreadOnly = null, int maxCount = 50)
         {
             var userId = CurrentUser.Id ?? throw new BusinessException("User is not authenticated");
+            
+            // Convert unreadOnly to isRead parameter
+            // unreadOnly = true means we want only unread notifications (isRead = false)
+            // unreadOnly = false means we want all notifications (isRead = null)
+            // unreadOnly = null means we want all notifications (isRead = null)
+            bool? isRead = unreadOnly.HasValue ? (unreadOnly.Value ? false : (bool?)null) : null;
+            
             var notifications = await _notificationRepository.GetUserNotificationsAsync(
                 userId, 
-                unreadOnly, 
+                isRead, 
                 maxDaysOld: 7, 
                 maxCount: maxCount
             );
@@ -211,10 +238,10 @@ namespace NewsApp.NewsAlerts
                 // Get user information
                 var user = await _userRepository.GetAsync(userId);
                 
-                // Check if email is confirmed
-                if (!user.EmailConfirmed || string.IsNullOrEmpty(user.Email))
+                // Check if email is configured
+                if (string.IsNullOrEmpty(user.Email))
                 {
-                    throw new BusinessException("Your email must be confirmed to receive alert notifications. Please verify your email in your profile.");
+                    throw new BusinessException("No email address configured in your profile. Please add an email address to receive notifications.");
                 }
 
                 Logger.LogInformation("Testing alert {AlertId} for user {UserId}", id, userId);

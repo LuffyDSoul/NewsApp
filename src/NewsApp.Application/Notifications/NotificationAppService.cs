@@ -36,7 +36,7 @@ namespace NewsApp.Notifications
         public async Task<NotificationPreferenceDto> GetPreferencesAsync()
         {
             // Por ahora retornamos preferencias por defecto
-            // En una implementación completa, estas se guardarían en la base de datos
+            // En una implementaciï¿½n completa, estas se guardarï¿½an en la base de datos
             return await Task.FromResult(new NotificationPreferenceDto
             {
                 EnableNotifications = true,
@@ -48,7 +48,7 @@ namespace NewsApp.Notifications
         public async Task<NotificationPreferenceDto> UpdatePreferencesAsync(NotificationPreferenceDto input)
         {
             // Por ahora solo validamos y retornamos
-            // En una implementación completa, estas se guardarían en la base de datos
+            // En una implementaciï¿½n completa, estas se guardarï¿½an en la base de datos
             if (input.PreferredSummaryHour < 0 || input.PreferredSummaryHour > 23)
             {
                 throw new ArgumentException("PreferredSummaryHour debe estar entre 0 y 23");
@@ -68,14 +68,9 @@ namespace NewsApp.Notifications
                 throw new InvalidOperationException("Usuario no encontrado");
             }
 
-            if (!user.EmailConfirmed)
-            {
-                throw new InvalidOperationException("Debes confirmar tu dirección de email antes de recibir notificaciones. Por favor, verifica tu email desde tu perfil.");
-            }
-
             if (string.IsNullOrEmpty(user.Email))
             {
-                throw new InvalidOperationException("No tienes una dirección de email configurada");
+                throw new InvalidOperationException("No tienes una direcciï¿½n de email configurada en tu perfil");
             }
 
             _logger.LogInformation("Sending test notification to user {UserId} at email {Email}", user.Id, user.Email);
@@ -87,7 +82,7 @@ namespace NewsApp.Notifications
             await _emailService.SendNewsNotificationAsync(
                 user.Email,
                 user.UserName ?? user.Email,
-                "Test - Tecnología",
+                "Test - Tecnologï¿½a",
                 testArticles);
 
             _logger.LogInformation("Test notification sent successfully to {Email}", user.Email);

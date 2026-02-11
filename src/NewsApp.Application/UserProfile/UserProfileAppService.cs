@@ -260,19 +260,22 @@ namespace NewsApp.UserProfile
 
         public Task<List<NewsLanguageDto>> GetAvailableNewsLanguagesAsync()
         {
-            // Return supported languages based on your NewsApp domain configuration
+            // Return supported languages based on NewsAPI official supported languages
             var languages = new List<NewsLanguageDto>
             {
-                new() { Code = "de", Name = "Deutsch", IsSupported = true },
+                new() { Code = "ar", Name = "العربية (Arabic)", IsSupported = true },
+                new() { Code = "de", Name = "Deutsch (German)", IsSupported = true },
                 new() { Code = "en", Name = "English", IsSupported = true },
-                new() { Code = "es", Name = "Español", IsSupported = true },
-                new() { Code = "fr", Name = "Français", IsSupported = true },
-                new() { Code = "he", Name = "Hebrew", IsSupported = true },
-                new() { Code = "it", Name = "Italiano", IsSupported = true },
-                new() { Code = "nl", Name = "Nederlands", IsSupported = true },
-                new() { Code = "no", Name = "Norsk", IsSupported = true },
-                new() { Code = "pt", Name = "Português", IsSupported = true },
-                new() { Code = "sv", Name = "Svenska", IsSupported = true }
+                new() { Code = "es", Name = "Español (Spanish)", IsSupported = true },
+                new() { Code = "fr", Name = "Français (French)", IsSupported = true },
+                new() { Code = "he", Name = "עברית (Hebrew)", IsSupported = true },
+                new() { Code = "it", Name = "Italiano (Italian)", IsSupported = true },
+                new() { Code = "nl", Name = "Nederlands (Dutch)", IsSupported = true },
+                new() { Code = "no", Name = "Norsk (Norwegian)", IsSupported = true },
+                new() { Code = "pt", Name = "Português (Portuguese)", IsSupported = true },
+                new() { Code = "ru", Name = "Русский (Russian)", IsSupported = true },
+                new() { Code = "sv", Name = "Svenska (Swedish)", IsSupported = true },
+                new() { Code = "zh", Name = "中文 (Chinese)", IsSupported = true }
             };
             
             return Task.FromResult(languages);
